@@ -30,7 +30,7 @@ function App() {
     const handleUploadComplete = () => {
       setIsParsing(false);
       refreshData().then(() => {
-        navigateToList();
+        navigate({ type: 'overview' });
       });
     };
 

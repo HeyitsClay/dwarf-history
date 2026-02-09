@@ -683,7 +683,7 @@ button:active {
 }
 
 .killer-list,
-.death-list,
+.civ-list,
 .race-list {
   list-style: none;
   padding: 0;
@@ -691,10 +691,10 @@ button:active {
 }
 
 .killer-item,
-.death-item,
+.civ-item,
 .race-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   padding: 0.75rem;
   border-bottom: 1px solid var(--df-border);
@@ -703,58 +703,74 @@ button:active {
 }
 
 .killer-item:hover,
-.death-item:hover {
+.civ-item:hover {
   background-color: var(--df-bg);
 }
 
 .killer-item:last-child,
-.death-item:last-child,
+.civ-item:last-child,
 .race-item:last-child {
   border-bottom: none;
 }
 
-.rank {
+.killer-rank,
+.civ-rank {
   color: var(--df-amber);
   font-weight: bold;
   min-width: 30px;
+  flex-shrink: 0;
 }
 
-.killer-item .name,
-.death-item .name {
+.killer-info,
+.civ-info {
   flex: 1;
-  color: var(--df-text);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.killer-item .race,
-.death-item .race {
+.killer-name,
+.civ-name {
+  color: var(--df-text);
+  font-weight: 500;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.killer-race,
+.civ-race {
   color: var(--df-text-dim);
   font-size: 0.85rem;
 }
 
-.killer-item .kills {
+.killer-count,
+.civ-count {
   color: var(--df-red);
   font-weight: bold;
+  flex-shrink: 0;
+  text-align: right;
+  min-width: 60px;
 }
 
-.death-item .year {
-  color: var(--df-amber);
-  font-size: 0.85rem;
-  min-width: 70px;
+.civ-count {
+  color: var(--df-green);
 }
 
-.death-item .killer {
-  color: var(--df-text-dim);
-  font-size: 0.85rem;
+.race-item {
+  align-items: center;
 }
 
 .race-item .race-name {
   flex: 1;
   color: var(--df-text);
+  word-break: break-word;
 }
 
 .race-item .race-count {
   color: var(--df-amber);
   font-weight: bold;
+  flex-shrink: 0;
 }
 
 .empty {

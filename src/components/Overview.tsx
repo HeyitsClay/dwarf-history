@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { db } from '../db/database';
-import type { HistoricalFigure, WorldMetadata } from '../types';
+import type { HistoricalFigure, WorldMetadata, Entity } from '../types';
 
 interface OverviewProps {
   onViewFigures: () => void;
@@ -11,8 +11,8 @@ interface OverviewProps {
 export const Overview = ({ onViewFigures, onViewFigure, onNewWorld }: OverviewProps) => {
   const [metadata, setMetadata] = useState<WorldMetadata | null>(null);
   const [topKillers, setTopKillers] = useState<HistoricalFigure[]>([]);
-  const [recentDeaths, setRecentDeaths] = useState<HistoricalFigure[]>([]);
   const [raceStats, setRaceStats] = useState<{ race: string; count: number }[]>([]);
+  const [topCivs, setTopCivs] = useState<{ entity: Entity; memberCount: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,14 +28,6 @@ export const Overview = ({ onViewFigures, onViewFigure, onNewWorld }: OverviewPr
         .slice(0, 10);
       setTopKillers(sortedByKills);
 
-      // Get recent deaths (figures who died in the last 50 years of world history)
-      const maxYear = Math.max(...allFigures.map(f => f.deathYear).filter(y => y > 0), 0);
-      const recent = allFigures
-        .filter(f => f.deathYear > 0 && f.deathYear >= maxYear - 50)
-        .sort((a, b) => b.deathYear - a.deathYear)
-        .slice(0, 10);
-      setRecentDeaths(recent);
-
       // Race statistics
       const raceCounts = new Map<string, number>();
       allFigures.forEach(f => {
@@ -46,6 +38,30 @@ export const Overview = ({ onViewFigures, onViewFigure, onNewWorld }: OverviewPr
         .sort((a, b) => b.count - a.count)
         .slice(0, 10);
       setRaceStats(sortedRaces);
+
+      // Top civilizations by member count
+      const allEntities = await db.entities.toArray();
+      const civMemberCounts = new Map<number, number>();
+      
+      // Count members for each entity
+      allFigures.forEach(f => {
+        f.entityLinks?.forEach(link => {
+          if (link.linkType === 'member' || link.linkType === 'ruler') {
+            civMemberCounts.set(link.entityId, (civMemberCounts.get(link.entityId) || 0) + 1);
+          }
+        });
+      });
+
+      // Sort by member count and get top 10
+      const sortedCivs = Array.from(civMemberCounts.entries())
+        .map(([entityId, count]) => ({ 
+          entity: allEntities.find(e => e.id === entityId) || { id: entityId, name: `Entity #${entityId}` },
+          memberCount: count 
+        }))
+        .filter(c => c.entity.name) // Only include named entities
+        .sort((a, b) => b.memberCount - a.memberCount)
+        .slice(0, 10);
+      setTopCivs(sortedCivs);
 
       setLoading(false);
     };
@@ -89,10 +105,12 @@ export const Overview = ({ onViewFigures, onViewFigure, onNewWorld }: OverviewPr
             <ul className="killer-list">
               {topKillers.map((figure, idx) => (
                 <li key={figure.id} className="killer-item" onClick={() => onViewFigure(figure.id)}>
-                  <span className="rank">#{idx + 1}</span>
-                  <span className="name">{figure.name}</span>
-                  <span className="race">{figure.race}</span>
-                  <span className="kills">{figure.kills?.length || 0} kills</span>
+                  <div className="killer-rank">#{idx + 1}</div>
+                  <div className="killer-info">
+                    <div className="killer-name">{figure.name}</div>
+                    <div className="killer-race">{figure.race}</div>
+                  </div>
+                  <div className="killer-count">{figure.kills?.length || 0} kills</div>
                 </li>
               ))}
             </ul>
@@ -102,22 +120,22 @@ export const Overview = ({ onViewFigures, onViewFigure, onNewWorld }: OverviewPr
         </section>
 
         <section className="overview-section">
-          <h2>💀 Recent Deaths</h2>
-          {recentDeaths.length > 0 ? (
-            <ul className="death-list">
-              {recentDeaths.map(figure => (
-                <li key={figure.id} className="death-item" onClick={() => onViewFigure(figure.id)}>
-                  <span className="year">Year {figure.deathYear}</span>
-                  <span className="name">{figure.name}</span>
-                  <span className="race">{figure.race}</span>
-                  {figure.killer && (
-                    <span className="killer">by {figure.killer.name}</span>
-                  )}
+          <h2>🏛️ Top Civilizations</h2>
+          {topCivs.length > 0 ? (
+            <ul className="civ-list">
+              {topCivs.map((civ, idx) => (
+                <li key={civ.entity.id} className="civ-item">
+                  <div className="civ-rank">#{idx + 1}</div>
+                  <div className="civ-info">
+                    <div className="civ-name">{civ.entity.name}</div>
+                    {civ.entity.race && <div className="civ-race">{civ.entity.race}</div>}
+                  </div>
+                  <div className="civ-count">{civ.memberCount} members</div>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="empty">No recent deaths recorded.</p>
+            <p className="empty">No civilization data available.</p>
           )}
         </section>
 
