@@ -9,14 +9,13 @@ interface OverviewProps {
 }
 
 export const Overview = ({ onNewWorld }: OverviewProps) => {
-  const [metadata, setMetadata] = useState<WorldMetadata | null>(null);
+  const [, setMetadata] = useState<WorldMetadata | null>(null);
   const [currentYear, setCurrentYear] = useState(0);
   const [livingCount, setLivingCount] = useState(0);
   const [totalDeaths, setTotalDeaths] = useState(0);
-  const [activityLevel, setActivityLevel] = useState<'peaceful' | 'active' | 'chaotic' | 'apocalypse'>('peaceful');
   const [topKiller, setTopKiller] = useState<HistoricalFigure | null>(null);
   const [strongestCiv, setStrongestCiv] = useState<Entity | null>(null);
-  const [raceStats, setRaceStats] = useState<{ race: string; count: number; living: number }[]>([]);
+  const [raceStats, setRaceStats] = useState<{ race: string; count: number; living: number; category: 'civilized' | 'monster' | 'animal' | 'other' }[]>([]);
   const [loadingStage, setLoadingStage] = useState('Initializing...');
   const [loadingProgress, setLoadingProgress] = useState(0);
 
@@ -50,16 +49,9 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         setCurrentYear(maxYear);
         
         const living = allFigures.filter(f => f.deathYear <= 0);
-        setLivingCount(living.length);
-        
         const dead = allFigures.filter(f => f.deathYear > 0);
+        setLivingCount(living.length);
         setTotalDeaths(dead.length);
-
-        const recentDeaths = allFigures.filter(f => f.deathYear > maxYear - 50).length;
-        if (recentDeaths > 1000) setActivityLevel('apocalypse');
-        else if (recentDeaths > 500) setActivityLevel('chaotic');
-        else if (recentDeaths > 100) setActivityLevel('active');
-        else setActivityLevel('peaceful');
 
         setLoadingStage('Finding legends...');
         setLoadingProgress(85);
@@ -83,22 +75,52 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           .sort((a, b) => b.members - a.members);
         setStrongestCiv(civs[0]?.entity || null);
 
-        const raceMap = new Map<string, { count: number; living: number }>();
+        // Categorize races
+        const civilizedRaces = ['DWARF', 'HUMAN', 'ELF', 'GOBLIN'];
+        const monsterRaces = ['TROLL', 'OGRE', 'MINOTAUR', 'ETTIN', 'GIANT', 'CYCLOPS', 'HYDRA', 'DRAGON', 'ROCA', 'DEMON', 'NIGHT_CREATURE', 'BOGEYMAN', 'VAMPIRE', 'WEREBEAST', 'FORGOTTEN_BEAST', 'TITAN', 'COLOSSUS'];
+        const animalRaces = ['WOLF', 'BEAR', 'LION', 'TIGER', 'LEOPARD', 'JAGUAR', 'ELEPHANT', 'RHINOCEROS', 'HIPPO', 'CROCODILE', 'ALLIGATOR', 'GORILLA', 'BABOON', 'MONKEY', 'DEER', 'ELK', 'MOOSE', 'CARIBOU', 'BISON', 'BUFFALO', 'YAK', 'COW', 'BULL', 'HORSE', 'DONKEY', 'MULE', 'CAMEL', 'LLAMA', 'ALPACA', 'SHEEP', 'GOAT', 'PIG', 'BOAR', 'DOG', 'CAT', 'RAT', 'BAT', 'BIRD'];
+        
+        const getCategory = (race: string): 'civilized' | 'monster' | 'animal' | 'other' => {
+          const upperRace = race.toUpperCase();
+          if (civilizedRaces.includes(upperRace)) return 'civilized';
+          if (monsterRaces.some(m => upperRace.includes(m))) return 'monster';
+          if (animalRaces.some(a => upperRace.includes(a))) return 'animal';
+          return 'other';
+        };
+
+        const raceMap = new Map<string, { count: number; living: number; category: 'civilized' | 'monster' | 'animal' | 'other' }>();
+        
         allFigures.forEach(f => {
-          const current = raceMap.get(f.race) || { count: 0, living: 0 };
+          const current = raceMap.get(f.race) || { count: 0, living: 0, category: getCategory(f.race) };
           current.count++;
           if (f.deathYear <= 0) current.living++;
           raceMap.set(f.race, current);
         });
         
-        const priorityRaces = ['DWARF', 'HUMAN', 'ELF'];
+        // Priority order for civilized races
+        const priorityOrder = ['DWARF', 'HUMAN', 'ELF', 'GOBLIN'];
         const allRaces = Array.from(raceMap.entries()).map(([race, data]) => ({ race, ...data }));
-        const prioritized = allRaces.filter(r => priorityRaces.includes(r.race))
-          .sort((a, b) => priorityRaces.indexOf(a.race) - priorityRaces.indexOf(b.race));
-        const others = allRaces.filter(r => !priorityRaces.includes(r.race))
-          .sort((a, b) => b.count - a.count);
         
-        setRaceStats([...prioritized, ...others].slice(0, 6));
+        // Separate civilized, monsters, animals, other
+        const civilized = allRaces
+          .filter(r => r.category === 'civilized')
+          .sort((a, b) => priorityOrder.indexOf(a.race) - priorityOrder.indexOf(b.race));
+        
+        const monsters = allRaces
+          .filter(r => r.category === 'monster')
+          .sort((a, b) => b.living - a.living);
+        
+        const animals = allRaces
+          .filter(r => r.category === 'animal')
+          .sort((a, b) => b.living - a.living)
+          .slice(0, 3); // Top 3 animals
+        
+        const others = allRaces
+          .filter(r => r.category === 'other')
+          .sort((a, b) => b.living - a.living)
+          .slice(0, 2); // Top 2 others
+        
+        setRaceStats([...civilized, ...monsters.slice(0, 3), ...animals, ...others]);
         setLoadingProgress(100);
 
       } catch (err) {
@@ -111,32 +133,25 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
     return () => { isCancelled = true; };
   }, []);
 
-  const activityColor = useMemo(() => ({
-    peaceful: '#2a9d8f',
-    active: '#e9c46a',
-    chaotic: '#e76f51',
-    apocalypse: '#9b2226',
-  })[activityLevel], [activityLevel]);
+  // Calculate percentages based on LIVING population only
+  const racePercentages = useMemo(() => {
+    if (livingCount === 0) return [];
+    return raceStats.map(r => ({
+      ...r,
+      percentage: (r.living / livingCount) * 100
+    }));
+  }, [raceStats, livingCount]);
 
-  const activityText = useMemo(() => ({
-    peaceful: 'Age of Peace',
-    active: 'Age of Conflict',
-    chaotic: 'Age of Chaos',
-    apocalypse: 'Age of Doom',
-  })[activityLevel], [activityLevel]);
-
-  const activityEmoji = useMemo(() => ({
-    peaceful: '☮️',
-    active: '⚔️',
-    chaotic: '🔥',
-    apocalypse: '☠️',
-  })[activityLevel], [activityLevel]);
+  const civilizedRaces = racePercentages.filter(r => r.category === 'civilized');
+  const monsterRaces = racePercentages.filter(r => r.category === 'monster');
+  const animalRaces = racePercentages.filter(r => r.category === 'animal');
+  // const otherRaces = racePercentages.filter(r => r.category === 'other');
 
   if (loadingProgress < 100) {
     return (
       <div className="loading-screen">
         <div className="loading-content">
-          <h1 className="loading-title">⚒️ Dwarf History</h1>
+          <div className="loading-logo">⚒️</div>
           <p className="loading-stage">{loadingStage}</p>
           <div className="loading-bar">
             <div className="loading-fill" style={{ width: `${loadingProgress}%` }} />
@@ -148,96 +163,142 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
 
   return (
     <div className="overview-dashboard">
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="world-title">
-          <h1>{metadata?.name || 'Unknown World'}</h1>
-          <div className="age-badge">
-            <span className="age-label">Year</span>
-            <span className="age-value">{currentYear}</span>
+      {/* World Year */}
+      <section className="year-section">
+        <div className="year-display">
+          <span className="year-label">Year</span>
+          <span className="year-value">{currentYear.toLocaleString()}</span>
+        </div>
+      </section>
+
+      {/* The Count */}
+      <section className="count-section">
+        <div className="count-grid">
+          <div className="count-item">
+            <span className="count-number living">{livingCount.toLocaleString()}</span>
+            <span className="count-label">Alive</span>
+          </div>
+          <div className="count-divider">/</div>
+          <div className="count-item">
+            <span className="count-number dead">{totalDeaths.toLocaleString()}</span>
+            <span className="count-label">Fallen</span>
+          </div>
+          <div className="count-divider">/</div>
+          <div className="count-item">
+            <span className="count-number total">{(livingCount + totalDeaths).toLocaleString()}</span>
+            <span className="count-label">Total</span>
           </div>
         </div>
-        
-        <div className="status-pill" style={{ borderColor: activityColor }}>
-          <span className="status-emoji">{activityEmoji}</span>
-          <span className="status-text" style={{ color: activityColor }}>{activityText}</span>
-        </div>
       </section>
 
-      {/* Big Stats */}
-      <section className="big-stats">
-        <div className="stat-box living">
-          <div className="stat-icon">👥</div>
-          <div className="stat-number">{livingCount.toLocaleString()}</div>
-          <div className="stat-label">Living Souls</div>
-        </div>
-        
-        <div className="stat-box dead">
-          <div className="stat-icon">💀</div>
-          <div className="stat-number">{totalDeaths.toLocaleString()}</div>
-          <div className="stat-label">Fallen</div>
-        </div>
-        
-        <div className="stat-box total">
-          <div className="stat-icon">📜</div>
-          <div className="stat-number">{(livingCount + totalDeaths).toLocaleString()}</div>
-          <div className="stat-label">Total Figures</div>
-        </div>
-      </section>
-
-      {/* Legends Section */}
+      {/* Legends */}
       <section className="legends-section">
-        <h2 className="section-title">Legends of This Age</h2>
-        
-        <div className="legends-grid">
-          {topKiller && (
-            <div className="legend-card killer">
-              <div className="legend-icon">🩸</div>
-              <div className="legend-label">Deadliest Figure</div>
+        {topKiller && (
+          <div className="legend-block">
+            <div className="legend-header">
+              <span className="legend-icon">🗡️</span>
+              <span className="legend-title">Deadliest Figure</span>
+            </div>
+            <div className="legend-content">
               <div className="legend-name">{topKiller.name}</div>
-              <div className="legend-detail">{topKiller.race} • {topKiller.kills?.length || 0} kills</div>
+              <div className="legend-meta">{topKiller.race} • {topKiller.kills?.length || 0} kills</div>
             </div>
-          )}
-          
-          {strongestCiv && (
-            <div className="legend-card civ">
-              <div className="legend-icon">👑</div>
-              <div className="legend-label">Dominant Civilization</div>
+          </div>
+        )}
+        
+        {strongestCiv && (
+          <div className="legend-block">
+            <div className="legend-header">
+              <span className="legend-icon">🏛️</span>
+              <span className="legend-title">Dominant Civilization</span>
+            </div>
+            <div className="legend-content">
               <div className="legend-name">{strongestCiv.name}</div>
-              <div className="legend-detail">{strongestCiv.race || 'Mixed'}</div>
+              <div className="legend-meta">{strongestCiv.race || 'Mixed population'}</div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </section>
 
-      {/* Population Section */}
-      <section className="population-section">
-        <h2 className="section-title">Population by Race</h2>
-        <div className="race-bars">
-          {raceStats.map(({ race, count, living }) => (
-            <div key={race} className="race-bar">
-              <div className="race-header">
-                <span className="race-name">{race}</span>
-                <span className="race-numbers">{living.toLocaleString()} / {count.toLocaleString()}</span>
+      {/* Population - Civilized */}
+      {civilizedRaces.length > 0 && (
+        <section className="population-section">
+          <h3 className="section-header">Civilized Races</h3>
+          <div className="population-bars">
+            {civilizedRaces.map(({ race, living, percentage }) => (
+              <div key={race} className="pop-bar civilized">
+                <div className="pop-label">
+                  <span className="pop-name">{race}</span>
+                  <span className="pop-count">{living.toLocaleString()}</span>
+                </div>
+                <div className="pop-track">
+                  <div 
+                    className="pop-fill"
+                    style={{ 
+                      width: `${Math.max(percentage, 1)}%`,
+                      backgroundColor: race === 'DWARF' ? '#d4a373' : race === 'HUMAN' ? '#2a9d8f' : race === 'ELF' ? '#e9c46a' : '#e76f51'
+                    }}
+                  />
+                </div>
+                <span className="pop-percent">{percentage.toFixed(1)}%</span>
               </div>
-              <div className="race-track">
-                <div 
-                  className="race-fill" 
-                  style={{ 
-                    width: `${(count / (livingCount + totalDeaths)) * 100}%`,
-                    backgroundColor: race === 'DWARF' ? '#d4a373' : race === 'HUMAN' ? '#2a9d8f' : race === 'ELF' ? '#e9c46a' : '#808080'
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Action Section */}
+      {/* Population - Monsters */}
+      {monsterRaces.length > 0 && (
+        <section className="population-section">
+          <h3 className="section-header">Monsters</h3>
+          <div className="population-bars">
+            {monsterRaces.map(({ race, living, percentage }) => (
+              <div key={race} className="pop-bar monster">
+                <div className="pop-label">
+                  <span className="pop-name">{race}</span>
+                  <span className="pop-count">{living.toLocaleString()}</span>
+                </div>
+                <div className="pop-track">
+                  <div 
+                    className="pop-fill"
+                    style={{ width: `${Math.max(percentage, 0.5)}%`, backgroundColor: '#9b2226' }}
+                  />
+                </div>
+                <span className="pop-percent">{percentage.toFixed(1)}%</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Population - Wildlife */}
+      {animalRaces.length > 0 && (
+        <section className="population-section">
+          <h3 className="section-header">Wildlife</h3>
+          <div className="population-bars">
+            {animalRaces.map(({ race, living, percentage }) => (
+              <div key={race} className="pop-bar animal">
+                <div className="pop-label">
+                  <span className="pop-name">{race}</span>
+                  <span className="pop-count">{living.toLocaleString()}</span>
+                </div>
+                <div className="pop-track">
+                  <div 
+                    className="pop-fill"
+                    style={{ width: `${Math.max(percentage, 0.5)}%`, backgroundColor: '#6b6b6b' }}
+                  />
+                </div>
+                <span className="pop-percent">{percentage.toFixed(1)}%</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Action */}
       <section className="action-section">
         <button className="btn-new-world" onClick={onNewWorld}>
-          🌍 Load Different World
+          Load Different World
         </button>
       </section>
     </div>
