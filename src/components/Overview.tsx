@@ -10,8 +10,6 @@ interface OverviewProps {
 
 interface WarData {
   name: string;
-  attacker: string;
-  defender: string;
   deaths: number;
   startYear: number;
 }
@@ -30,7 +28,7 @@ export const Overview = ({ onViewFigures, onViewFigure, onNewWorld }: OverviewPr
   const [livingCount, setLivingCount] = useState(0);
   const [activityLevel, setActivityLevel] = useState<'peaceful' | 'active' | 'chaotic' | 'apocalypse'>('peaceful');
   const [topKillers, setTopKillers] = useState<HistoricalFigure[]>([]);
-  const [topCivs, setTopCivs] = useState<{ entity: Entity; memberCount: number; siteCount: number; power: number }[]>([]);
+  const [topCivs, setTopCivs] = useState<{ entity: Entity; memberCount: number; power: number }[]>([]);
   const [raceStats, setRaceStats] = useState<{ race: string; count: number; living: number }[]>([]);
   const [deathBreakdown, setDeathBreakdown] = useState<DeathBreakdown>({ combat: 0, oldAge: 0, violence: 0, accidents: 0, other: 0 });
   const [wars, setWars] = useState<WarData[]>([]);
@@ -39,151 +37,173 @@ export const Overview = ({ onViewFigures, onViewFigure, onNewWorld }: OverviewPr
     strongest: Entity | null;
     hottestWar: WarData | null;
   }>({ bloodiest: null, strongest: null, hottestWar: null });
-  const [loading, setLoading] = useState(true);
+  const [loadingStage, setLoadingStage] = useState('Initializing...');
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   useEffect(() => {
+    let isCancelled = false;
+    
     const loadData = async () => {
-      const meta = await db.getMetadata();
-      setMetadata(meta || null);
+      try {
+        // Stage 1: Metadata
+        if (isCancelled) return;
+        setLoadingStage('Loading metadata...');
+        setLoadingProgress(10);
+        const meta = await db.getMetadata();
+        if (isCancelled) return;
+        setMetadata(meta || null);
 
-      // Get all data
-      const [allFigures, allEvents, allEntities, allSites] = await Promise.all([
-        db.figures.toArray(),
-        db.events.toArray(),
-        db.entities.toArray(),
-        db.sites.toArray(),
-      ]);
+        // Stage 2: Get figures (limited for performance)
+        setLoadingStage('Loading figures...');
+        setLoadingProgress(20);
+        
+        // Get count first
+        const totalFigures = await db.figures.count();
+        
+        // Load figures in batches to avoid blocking
+        const batchSize = 1000;
+        const allFigures: HistoricalFigure[] = [];
+        
+        for (let offset = 0; offset < totalFigures; offset += batchSize) {
+          if (isCancelled) return;
+          const batch = await db.figures.offset(offset).limit(batchSize).toArray();
+          allFigures.push(...batch);
+          setLoadingProgress(20 + Math.floor((offset / totalFigures) * 30));
+          // Yield to main thread
+          await new Promise(r => setTimeout(r, 0));
+        }
 
-      // World age - max year from events
-      const maxYear = Math.max(...allEvents.map(e => e.year).filter(y => y > 0), 1);
-      setCurrentYear(maxYear);
+        // Stage 3: Calculate year and living count
+        setLoadingStage('Calculating world age...');
+        setLoadingProgress(50);
+        
+        const maxYear = Math.max(...allFigures.map(f => f.deathYear > 0 ? f.deathYear : 0), 1);
+        setCurrentYear(maxYear);
+        
+        const living = allFigures.filter(f => f.deathYear <= 0);
+        setLivingCount(living.length);
 
-      // Living population (deathYear == -1 or 0)
-      const living = allFigures.filter(f => f.deathYear <= 0);
-      setLivingCount(living.length);
+        // Activity level - check recent deaths from figure data only (not all events)
+        const recentDeaths = allFigures.filter(f => f.deathYear > maxYear - 50).length;
+        if (recentDeaths > 1000) setActivityLevel('apocalypse');
+        else if (recentDeaths > 500) setActivityLevel('chaotic');
+        else if (recentDeaths > 100) setActivityLevel('active');
+        else setActivityLevel('peaceful');
 
-      // Activity level - events in last 50 years
-      const recentEvents = allEvents.filter(e => e.year >= maxYear - 50);
-      const recentDeathEvents = recentEvents.filter(e => e.type === 'hf died').length;
-      if (recentDeathEvents > 1000) setActivityLevel('apocalypse');
-      else if (recentDeathEvents > 500) setActivityLevel('chaotic');
-      else if (recentDeathEvents > 100) setActivityLevel('active');
-      else setActivityLevel('peaceful');
+        // Stage 4: Top killers (limited to 10)
+        setLoadingStage('Finding deadliest figures...');
+        setLoadingProgress(60);
+        await new Promise(r => setTimeout(r, 0));
+        
+        const sortedKillers = allFigures
+          .filter(f => (f.kills?.length || 0) > 0)
+          .sort((a, b) => (b.kills?.length || 0) - (a.kills?.length || 0))
+          .slice(0, 10);
+        setTopKillers(sortedKillers);
 
-      // Calculate weighted kill scores
-      const figuresWithScores = allFigures.map(f => ({
-        ...f,
-        weightedKills: calculateWeightedKills(f, allFigures),
-      }));
+        // Bloodiest living
+        const bloodiestLiving = allFigures
+          .filter(f => f.deathYear <= 0 && f.kills && f.kills.length > 0)
+          .sort((a, b) => (b.kills?.length || 0) - (a.kills?.length || 0))[0] || null;
 
-      // Top killers by weighted score
-      const sortedKillers = figuresWithScores
-        .filter(f => f.weightedKills > 0)
-        .sort((a, b) => b.weightedKills - a.weightedKills)
-        .slice(0, 10);
-      setTopKillers(sortedKillers);
+        // Stage 5: Load entities
+        setLoadingStage('Loading civilizations...');
+        setLoadingProgress(70);
+        await new Promise(r => setTimeout(r, 0));
+        
+        const allEntities = await db.entities.toArray();
+        
+        // Calculate civilization power (limited to top 10)
+        const civPower = allEntities
+          .filter(e => e.name)
+          .map(entity => {
+            const members = allFigures.filter(f => 
+              f.entityLinks?.some(l => l.entityId === entity.id && (l.linkType === 'member' || l.linkType === 'ruler'))
+            ).length;
+            const power = Math.round(members / 10);
+            return { entity, memberCount: members, power };
+          })
+          .filter(c => c.memberCount > 0)
+          .sort((a, b) => b.power - a.power)
+          .slice(0, 10);
+        setTopCivs(civPower);
 
-      // Bloodiest living figure (triple threat)
-      const bloodiestLiving = figuresWithScores
-        .filter(f => f.deathYear <= 0 && f.kills && f.kills.length > 0)
-        .sort((a, b) => (b.kills?.length || 0) - (a.kills?.length || 0))[0] || null;
+        const strongest = civPower[0]?.entity || null;
 
-      // Calculate civilization power
-      const civPower = allEntities
-        .filter(e => e.name)
-        .map(entity => {
-          const members = allFigures.filter(f => 
-            f.entityLinks?.some(l => l.entityId === entity.id && (l.linkType === 'member' || l.linkType === 'ruler'))
-          ).length;
-          const sites = allSites.filter(s => {
-            // Check if any event links this site to the entity as civ_id
-            return allEvents.some(ev => ev.civId === entity.id && ev.siteId === s.id);
-          }).length;
-          const power = Math.round((members * 10 + sites * 50) / 100);
-          return { entity, memberCount: members, siteCount: sites, power };
-        })
-        .filter(c => c.memberCount > 0)
-        .sort((a, b) => b.power - a.power)
-        .slice(0, 10);
-      setTopCivs(civPower);
+        // Stage 6: Race statistics
+        setLoadingStage('Analyzing demographics...');
+        setLoadingProgress(80);
+        await new Promise(r => setTimeout(r, 0));
+        
+        const raceMap = new Map<string, { count: number; living: number }>();
+        allFigures.forEach(f => {
+          const current = raceMap.get(f.race) || { count: 0, living: 0 };
+          current.count++;
+          if (f.deathYear <= 0) current.living++;
+          raceMap.set(f.race, current);
+        });
+        const sortedRaces = Array.from(raceMap.entries())
+          .map(([race, data]) => ({ race, ...data }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10);
+        setRaceStats(sortedRaces);
 
-      // Strongest civ (triple threat)
-      const strongest = civPower[0]?.entity || null;
+        // Stage 7: Death breakdown from figure data
+        setLoadingStage('Analyzing deaths...');
+        setLoadingProgress(90);
+        await new Promise(r => setTimeout(r, 0));
+        
+        const killedFigures = allFigures.filter(f => f.killer);
+        const breakdown: DeathBreakdown = { combat: 0, oldAge: 0, violence: 0, accidents: 0, other: 0 };
+        
+        killedFigures.forEach(f => {
+          const cause = (f.killer?.cause || '').toLowerCase();
+          if (cause.includes('struck') || cause.includes('shot') || cause.includes('combat') || cause.includes('battle')) {
+            breakdown.combat++;
+          } else if (cause.includes('old') || cause.includes('age')) {
+            breakdown.oldAge++;
+          } else if (cause.includes('murder') || cause.includes('executed') || cause.includes('torture')) {
+            breakdown.violence++;
+          } else if (cause.includes('fall') || cause.includes('drown') || cause.includes('fire')) {
+            breakdown.accidents++;
+          } else {
+            breakdown.other++;
+          }
+        });
+        setDeathBreakdown(breakdown);
 
-      // War analysis
-      const warEvents = allEvents.filter(e => 
-        e.type === 'war declared' || e.type === 'battle' || e.type === 'hf died'
-      );
-      
-      // Group events by war/pair of civs
-      const warMap = new Map<string, WarData>();
-      warEvents.forEach(e => {
-        if (e.civId && e.siteId) {
-          const key = `${Math.min(e.civId, e.siteId)}-${Math.max(e.civId, e.siteId)}`;
-          if (!warMap.has(key)) {
-            const civ1 = allEntities.find(ent => ent.id === e.civId);
-            const civ2 = allEntities.find(ent => ent.id === e.siteId);
-            warMap.set(key, {
-              name: `${civ1?.name || 'Unknown'} vs ${civ2?.name || 'Unknown'}`,
-              attacker: civ1?.name || 'Unknown',
-              defender: civ2?.name || 'Unknown',
-              deaths: 0,
-              startYear: e.year,
+        // Simplified wars from figure kills
+        const warMap = new Map<string, WarData>();
+        sortedKillers.forEach(killer => {
+          if (killer.kills && killer.kills.length > 5) {
+            warMap.set(killer.name, {
+              name: `${killer.name}'s Campaign`,
+              deaths: killer.kills.length,
+              startYear: killer.kills[0]?.year || 1,
             });
           }
-          if (e.type === 'hf died') {
-            warMap.get(key)!.deaths++;
-          }
-        }
-      });
-      
-      const sortedWars = Array.from(warMap.values())
-        .filter(w => w.deaths > 0)
-        .sort((a, b) => b.deaths - a.deaths)
-        .slice(0, 5);
-      setWars(sortedWars);
+        });
+        const sortedWars = Array.from(warMap.values())
+          .sort((a, b) => b.deaths - a.deaths)
+          .slice(0, 5);
+        setWars(sortedWars);
 
-      // Hottest war (triple threat)
-      const hottestWar = sortedWars[0] || null;
+        const hottestWar = sortedWars[0] || null;
 
-      setTripleThreat({ bloodiest: bloodiestLiving, strongest, hottestWar });
+        setTripleThreat({ bloodiest: bloodiestLiving, strongest, hottestWar });
+        setLoadingProgress(100);
 
-      // Race statistics with living count
-      const raceMap = new Map<string, { count: number; living: number }>();
-      allFigures.forEach(f => {
-        const current = raceMap.get(f.race) || { count: 0, living: 0 };
-        current.count++;
-        if (f.deathYear <= 0) current.living++;
-        raceMap.set(f.race, current);
-      });
-      const sortedRaces = Array.from(raceMap.entries())
-        .map(([race, data]) => ({ race, ...data }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10);
-      setRaceStats(sortedRaces);
-
-      // Death breakdown
-      const breakdown: DeathBreakdown = { combat: 0, oldAge: 0, violence: 0, accidents: 0, other: 0 };
-      allEvents.filter(e => e.type === 'hf died').forEach(e => {
-        const cause = (e.cause || '').toLowerCase();
-        if (cause.includes('struck') || cause.includes('shot') || cause.includes('combat')) {
-          breakdown.combat++;
-        } else if (cause.includes('old') || cause.includes('age')) {
-          breakdown.oldAge++;
-        } else if (cause.includes('murder') || cause.includes('executed') || cause.includes('torture')) {
-          breakdown.violence++;
-        } else if (cause.includes('fall') || cause.includes('drown') || cause.includes('fire')) {
-          breakdown.accidents++;
-        } else {
-          breakdown.other++;
-        }
-      });
-      setDeathBreakdown(breakdown);
-
-      setLoading(false);
+      } catch (err) {
+        console.error('Overview loading error:', err);
+        setLoadingStage('Error loading data. Please refresh.');
+      }
     };
 
     loadData();
+    
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   const activityColor = useMemo(() => ({
@@ -200,17 +220,20 @@ export const Overview = ({ onViewFigures, onViewFigure, onNewWorld }: OverviewPr
     apocalypse: 'Age of Apocalypse',
   })[activityLevel], [activityLevel]);
 
-  if (loading) {
+  if (loadingProgress < 100) {
     return (
       <div className="overview-loading">
-        <p>Loading world data...</p>
+        <p>{loadingStage}</p>
+        <div className="loading-bar">
+          <div className="loading-fill" style={{ width: `${loadingProgress}%` }} />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="overview">
-      {/* Header / World Vitals */}
+      {/* World Vitals */}
       <div className="overview-header">
         <h1>{metadata?.name || 'Unknown World'}</h1>
         
@@ -329,7 +352,7 @@ export const Overview = ({ onViewFigures, onViewFigure, onNewWorld }: OverviewPr
                   </div>
                   <div className="civ-info">
                     <div className="civ-name">{civ.entity.name}</div>
-                    <div className="civ-stats">{civ.memberCount} members • {civ.siteCount} sites</div>
+                    <div className="civ-stats">{civ.memberCount} members</div>
                   </div>
                   <div className="civ-power">Power {civ.power}</div>
                 </li>
@@ -373,22 +396,6 @@ export const Overview = ({ onViewFigures, onViewFigure, onNewWorld }: OverviewPr
     </div>
   );
 };
-
-// Helper to calculate weighted kill score
-function calculateWeightedKills(figure: HistoricalFigure, allFigures: HistoricalFigure[]): number {
-  if (!figure.kills) return 0;
-  
-  return figure.kills.reduce((score, kill) => {
-    const victim = allFigures.find(f => f.id === kill.victimId);
-    if (!victim) return score + 0.1;
-    
-    // Weight by victim type
-    if (victim.race.includes('DEITY') || victim.race.includes('DEMON')) return score + 1000;
-    if (victim.race.includes('TITAN') || victim.race.includes('FORGOTTEN_BEAST') || victim.race.includes('COLOSSUS') || victim.race.includes('DRAGON')) return score + 50;
-    if (victim.race.includes('DWARF') || victim.race.includes('HUMAN') || victim.race.includes('ELF')) return score + 1;
-    return score + 0.1; // Animals, etc.
-  }, 0);
-}
 
 const DeathBar = ({ label, count, color }: { label: string; count: number; color: string }) => {
   if (count === 0) return null;
