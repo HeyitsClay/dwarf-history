@@ -2,25 +2,34 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 
-// Error handler
+console.log('=== MAIN.TSX STARTING ===')
+
 try {
-  console.log('Dwarf History: Starting app...')
-  const root = document.getElementById('root')
-  if (!root) {
-    throw new Error('Root element not found')
+  const rootElement = document.getElementById('root')
+  console.log('Root element found:', !!rootElement)
+  
+  if (!rootElement) {
+    throw new Error('Root element not found in DOM')
   }
   
-  createRoot(root).render(
+  console.log('Creating React root...')
+  const root = createRoot(rootElement)
+  
+  console.log('Rendering App...')
+  root.render(
     <StrictMode>
       <App />
     </StrictMode>,
   )
-  console.log('Dwarf History: App mounted successfully')
+  
+  console.log('=== MAIN.TSX COMPLETE ===')
 } catch (error) {
-  console.error('Dwarf History: Failed to start app:', error)
-  const root = document.getElementById('root')
-  if (root) {
-    root.innerHTML = `
+  console.error('=== FATAL ERROR ===', error)
+  
+  // Show error on page
+  const rootElement = document.getElementById('root')
+  if (rootElement) {
+    rootElement.innerHTML = `
       <div style="
         display: flex;
         flex-direction: column;
@@ -33,12 +42,9 @@ try {
         padding: 2rem;
       ">
         <h1 style="color: #e76f51;">⚠️ Error Starting App</h1>
-        <pre style="color: #d4a373; max-width: 600px; overflow: auto;">
-${error instanceof Error ? error.message : String(error)}
+        <pre style="color: #d4a373; white-space: pre-wrap; word-break: break-word;">
+${error instanceof Error ? error.stack : String(error)}
         </pre>
-        <p style="margin-top: 1rem; color: #808080;">
-          Check browser console (F12) for more details.
-        </p>
       </div>
     `
   }
