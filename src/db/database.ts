@@ -53,8 +53,9 @@ export class DwarfHistoryDB extends Dexie {
   }
 
   async bulkAddFigures(figures: HistoricalFigure[], progressCallback?: (count: number) => void): Promise<void> {
-    // Remove duplicates by ID
-    const uniqueFigures = Array.from(new Map(figures.map(f => [f.id, f])).values());
+    // Filter out entries without valid IDs and remove duplicates
+    const validFigures = figures.filter(f => f.id !== undefined && f.id !== null);
+    const uniqueFigures = Array.from(new Map(validFigures.map(f => [f.id, f])).values());
     const batchSize = 500;
     for (let i = 0; i < uniqueFigures.length; i += batchSize) {
       const batch = uniqueFigures.slice(i, i + batchSize);
@@ -66,8 +67,9 @@ export class DwarfHistoryDB extends Dexie {
   }
 
   async bulkAddEvents(events: HistoricalEvent[], progressCallback?: (count: number) => void): Promise<void> {
-    // Remove duplicates by ID
-    const uniqueEvents = Array.from(new Map(events.map(e => [e.id, e])).values());
+    // Filter out entries without valid IDs and remove duplicates
+    const validEvents = events.filter(e => e.id !== undefined && e.id !== null);
+    const uniqueEvents = Array.from(new Map(validEvents.map(e => [e.id, e])).values());
     const batchSize = 500;
     for (let i = 0; i < uniqueEvents.length; i += batchSize) {
       const batch = uniqueEvents.slice(i, i + batchSize);
@@ -79,8 +81,9 @@ export class DwarfHistoryDB extends Dexie {
   }
 
   async bulkAddSites(sites: Site[], progressCallback?: (count: number) => void): Promise<void> {
-    // Remove duplicates by ID
-    const uniqueSites = Array.from(new Map(sites.map(s => [s.id, s])).values());
+    // Filter out entries without valid IDs and remove duplicates
+    const validSites = sites.filter(s => s.id !== undefined && s.id !== null);
+    const uniqueSites = Array.from(new Map(validSites.map(s => [s.id, s])).values());
     const batchSize = 500;
     for (let i = 0; i < uniqueSites.length; i += batchSize) {
       const batch = uniqueSites.slice(i, i + batchSize);
@@ -92,8 +95,9 @@ export class DwarfHistoryDB extends Dexie {
   }
 
   async bulkAddEntities(entities: Entity[], progressCallback?: (count: number) => void): Promise<void> {
-    // Remove duplicates by ID
-    const uniqueEntities = Array.from(new Map(entities.map(e => [e.id, e])).values());
+    // Filter out entries without valid IDs and remove duplicates
+    const validEntities = entities.filter(e => e.id !== undefined && e.id !== null);
+    const uniqueEntities = Array.from(new Map(validEntities.map(e => [e.id, e])).values());
     const batchSize = 500;
     for (let i = 0; i < uniqueEntities.length; i += batchSize) {
       const batch = uniqueEntities.slice(i, i + batchSize);
