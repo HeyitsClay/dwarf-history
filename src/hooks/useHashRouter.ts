@@ -88,6 +88,8 @@ function parseHash(hash: string): ViewState {
       return { type: 'site', id: parseInt(parts[1], 10) || 0 };
     case 'entity':
       return { type: 'entity', id: parseInt(parts[1], 10) || 0 };
+    case 'overview':
+      return { type: 'overview' };
     case 'list':
       return { type: 'list' };
     case 'upload':
@@ -105,6 +107,8 @@ function viewToHash(view: ViewState): string {
       return `#/site/${view.id}`;
     case 'entity':
       return `#/entity/${view.id}`;
+    case 'overview':
+      return '#/overview';
     case 'list':
       return '#/list';
     case 'upload':

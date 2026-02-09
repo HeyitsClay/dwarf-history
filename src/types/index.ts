@@ -115,6 +115,7 @@ export interface ParsedWorld {
 export type ViewState = 
   | { type: 'upload' }
   | { type: 'parsing'; progress: number; phase: string }
+  | { type: 'overview' }
   | { type: 'list' }
   | { type: 'figure'; id: number }
   | { type: 'site'; id: number }

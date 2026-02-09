@@ -51,20 +51,20 @@ export const FigureList = ({ onSelectFigure }: FigureListProps) => {
       const { db } = await import('../db/database');
       
       if (!query.trim()) {
-        // Return top figures by kill count by default
+        // Return top figures by kill count by default (showing top 100 for performance)
         const allFigures = await db.figures.toArray();
         const sorted = allFigures
           .sort((a, b) => (b.kills?.length || 0) - (a.kills?.length || 0))
-          .slice(0, 500);
+          .slice(0, 100);
         setFigures(sorted);
       } else {
+        // Search ALL figures in database (no limit)
         const lowerQuery = query.toLowerCase();
         const results = await db.figures
           .filter(f => 
             f.name.toLowerCase().includes(lowerQuery) ||
             f.race.toLowerCase().includes(lowerQuery)
           )
-          .limit(500)
           .toArray();
         setFigures(results);
       }
@@ -97,7 +97,9 @@ export const FigureList = ({ onSelectFigure }: FigureListProps) => {
         />
         {loading && <span className="search-loading">⟳</span>}
         <span className="search-count">
-          {figures.length.toLocaleString()} figures
+          {!query.trim() && figures.length >= 100 
+            ? `Top 100 by kills (of ${figures.length.toLocaleString()} total)` 
+            : `${figures.length.toLocaleString()} figures found`}
         </span>
       </div>
 

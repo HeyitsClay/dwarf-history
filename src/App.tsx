@@ -5,24 +5,25 @@ import { db } from './db/database';
 import { UploadZone } from './components/UploadZone';
 import { FigureList } from './components/FigureList';
 import { FigureDetail } from './components/FigureDetail';
+import { Overview } from './components/Overview';
 import './App.css';
 
 function App() {
   console.log('App: Rendering...');
   try {
-    const { view, navigateToFigure, navigateToSite, navigateToList, navigateToUpload } = useHashRouter();
+    const { view, navigate, navigateToFigure, navigateToSite, navigateToList, navigateToUpload } = useHashRouter();
     const { hasData, metadata, loading, clearWorld, refreshData } = useWorldData();
     const { warning, checked } = useStorageGuard();
     const [isParsing, setIsParsing] = useState(false);
     
     console.log('App: Hooks loaded, view type:', view.type);
 
-    // Redirect to list if we have data and are on upload
+    // Redirect to overview if we have data and are on upload
     useEffect(() => {
       if (!loading && hasData && view.type === 'upload') {
-        navigateToList();
+        navigate({ type: 'overview' });
       }
-    }, [loading, hasData, view.type, navigateToList]);
+    }, [loading, hasData, view.type]);
 
     useParsingGuard(isParsing);
 
@@ -67,6 +68,15 @@ function App() {
             <UploadZone
               onComplete={handleUploadComplete}
               existingData={hasData}
+            />
+          );
+        
+        case 'overview':
+          return (
+            <Overview
+              onViewFigures={navigateToList}
+              onViewFigure={navigateToFigure}
+              onNewWorld={() => navigateToUpload()}
             />
           );
         
