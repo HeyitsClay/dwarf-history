@@ -361,21 +361,25 @@ class SimpleXmlParser {
 
 // Worker message handler
 self.onmessage = async (e: MessageEvent) => {
+  console.log('Worker: Received message', e.data.type);
   const { type, file } = e.data;
 
   if (type === 'parse') {
     try {
+      console.log('Worker: Starting parse, file size:', file.size);
       const parser = new SimpleXmlParser(file.size);
       
-      // Read file in chunks
-      const chunkSize = 1024 * 1024; // 1MB chunks
+      // Read file in chunks using FileReaderSync (available in workers)
+      const chunkSize = 2 * 1024 * 1024; // 2MB chunks for faster parsing
       const reader = new FileReaderSync();
       
+      console.log('Worker: Reading file in chunks...');
       for (let offset = 0; offset < file.size; offset += chunkSize) {
         const chunk = file.slice(offset, Math.min(offset + chunkSize, file.size));
         const text = reader.readAsText(chunk);
         parser.parseChunk(text);
       }
+      console.log('Worker: File read complete, finalizing...');
       
       const result = parser.finalize();
       

@@ -26,22 +26,32 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onComplete, existingData
   const workerRef = useRef<Worker | null>(null);
 
   const parseFile = useCallback(async (file: File) => {
+    console.log('UploadZone: Starting parse for', file.name);
     setError(null);
-    setProgress({ phase: 'reading', progress: 0, message: 'Reading file...' });
+    setProgress({ phase: 'reading', progress: 5, message: 'Initializing parser...' });
 
     try {
       // Clear existing data if any
       if (existingData) {
+        console.log('UploadZone: Clearing existing data...');
         await db.clearAll();
       }
 
       // Create worker
-      const worker = new Worker(new URL('../workers/xmlParser.ts', import.meta.url), {
-        type: 'module',
-      });
+      console.log('UploadZone: Creating worker...');
+      let worker: Worker;
+      try {
+        worker = new Worker(new URL('../workers/xmlParser.ts', import.meta.url), {
+          type: 'module',
+        });
+      } catch (workerErr) {
+        console.error('UploadZone: Worker creation failed:', workerErr);
+        throw new Error('Failed to create parser worker. Your browser may not support module workers.');
+      }
       workerRef.current = worker;
 
       worker.onmessage = async (e) => {
+        console.log('UploadZone: Worker message:', e.data.type);
         const { type, progress: prog, phase, data, error: workerError, counts } = e.data;
 
         if (type === 'progress') {
@@ -52,10 +62,12 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onComplete, existingData
             counts,
           });
         } else if (type === 'complete') {
+          console.log('UploadZone: Parsing complete, storing data...');
           setProgress({ phase: 'storing', progress: 90, message: 'Storing data...' });
 
           // Store data in IndexedDB
           const { figures, events, sites, entities } = data;
+          console.log(`UploadZone: Storing ${figures.length} figures, ${events.length} events...`);
 
           // Create metadata
           const metadata: WorldMetadata = {
@@ -75,6 +87,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onComplete, existingData
           await db.sites.bulkAdd(sites);
           await db.entities.bulkAdd(entities);
 
+          console.log('UploadZone: All data stored!');
           setProgress({ phase: 'storing', progress: 100, message: 'Complete!' });
           
           worker.terminate();
@@ -89,7 +102,18 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onComplete, existingData
         }
       };
 
-      // Start parsing
+      // Handle worker errors
+      worker.onerror = (err) => {
+        console.error('UploadZone: Worker error:', err);
+        setError(`Worker error: ${err.message}`);
+        worker.terminate();
+        workerRef.current = null;
+        setProgress(null);
+      };
+
+      console.log('UploadZone: Starting worker with file:', file.name, file.size);
+      
+      // Start parsing - pass file (not transferable, will be cloned)
       worker.postMessage({
         type: 'parse',
         file,
@@ -97,6 +121,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onComplete, existingData
       });
 
     } catch (err) {
+      console.error('UploadZone: Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to parse file');
       setProgress(null);
     }
