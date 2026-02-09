@@ -72,13 +72,13 @@ export const UploadZone = ({ onComplete, existingData }: UploadZoneProps) => {
         entityCount: entities.length,
       };
 
-      await db.metadata.add(metadata);
+      await db.metadata.put(metadata);
 
-      // Bulk insert
+      // Bulk insert (with duplicate handling)
       await db.bulkAddFigures(figures);
       await db.bulkAddEvents(events);
-      await db.sites.bulkAdd(sites);
-      await db.entities.bulkAdd(entities);
+      await db.bulkAddSites(sites);
+      await db.bulkAddEntities(entities);
 
       console.log('UploadZone: All data stored!');
       setProgress({ phase: 'storing', progress: 100, message: 'Complete!' });
