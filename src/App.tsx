@@ -8,11 +8,14 @@ import { FigureDetail } from './components/FigureDetail';
 import './App.css';
 
 function App() {
+  console.log('App: Rendering...');
   try {
     const { view, navigateToFigure, navigateToSite, navigateToList, navigateToUpload } = useHashRouter();
     const { hasData, metadata, loading, clearWorld, refreshData } = useWorldData();
     const { warning, checked } = useStorageGuard();
     const [isParsing, setIsParsing] = useState(false);
+    
+    console.log('App: Hooks loaded, view type:', view.type);
 
     // Redirect to list if we have data and are on upload
     useEffect(() => {
