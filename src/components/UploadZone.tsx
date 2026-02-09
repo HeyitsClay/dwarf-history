@@ -1,6 +1,7 @@
 import { useCallback, useState, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { db } from '../db/database';
+import { parseLegendsFile } from '../xmlParserMain';
 import type { WorldMetadata } from '../types';
 
 interface UploadZoneProps {
@@ -20,15 +21,15 @@ interface ParseProgress {
   };
 }
 
-export const UploadZone: React.FC<UploadZoneProps> = ({ onComplete, existingData }) => {
+export const UploadZone = ({ onComplete, existingData }: UploadZoneProps) => {
   const [progress, setProgress] = useState<ParseProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const workerRef = useRef<Worker | null>(null);
 
   const parseFile = useCallback(async (file: File) => {
-    console.log('UploadZone: Starting parse for', file.name);
+    console.log('UploadZone: Starting parse for', file.name, 'size:', file.size);
     setError(null);
-    setProgress({ phase: 'reading', progress: 5, message: 'Initializing parser...' });
+    setProgress({ phase: 'reading', progress: 5, message: 'Reading file...' });
 
     try {
       // Clear existing data if any
@@ -37,88 +38,52 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onComplete, existingData
         await db.clearAll();
       }
 
-      // Create worker
-      console.log('UploadZone: Creating worker...');
-      let worker: Worker;
-      try {
-        worker = new Worker(new URL('../workers/xmlParser.ts', import.meta.url), {
-          type: 'module',
-        });
-      } catch (workerErr) {
-        console.error('UploadZone: Worker creation failed:', workerErr);
-        throw new Error('Failed to create parser worker. Your browser may not support module workers.');
-      }
-      workerRef.current = worker;
-
-      worker.onmessage = async (e) => {
-        console.log('UploadZone: Worker message:', e.data.type);
-        const { type, progress: prog, phase, data, error: workerError, counts } = e.data;
-
-        if (type === 'progress') {
+      // Use main thread parser (more reliable than worker for file handling)
+      console.log('UploadZone: Using main thread parser...');
+      setProgress({ phase: 'parsing', progress: 10, message: 'Parsing XML...' });
+      
+      const result = await parseLegendsFile(
+        file,
+        (prog, counts) => {
+          console.log(`UploadZone: Progress ${prog}%`, counts);
           setProgress({
-            phase: phase === 'parsing' ? 'parsing' : 'reading',
-            progress: prog,
+            phase: 'parsing',
+            progress: 10 + Math.floor(prog * 0.7), // 10-80% for parsing
             message: `Parsing XML... ${prog}%`,
             counts,
           });
-        } else if (type === 'complete') {
-          console.log('UploadZone: Parsing complete, storing data...');
-          setProgress({ phase: 'storing', progress: 90, message: 'Storing data...' });
-
-          // Store data in IndexedDB
-          const { figures, events, sites, entities } = data;
-          console.log(`UploadZone: Storing ${figures.length} figures, ${events.length} events...`);
-
-          // Create metadata
-          const metadata: WorldMetadata = {
-            name: file.name.replace(/\.xml$/i, ''),
-            version: 'unknown',
-            figureCount: figures.length,
-            eventCount: events.length,
-            siteCount: sites.length,
-            entityCount: entities.length,
-          };
-
-          await db.metadata.add(metadata);
-
-          // Bulk insert with progress
-          await db.bulkAddFigures(figures);
-          await db.bulkAddEvents(events);
-          await db.sites.bulkAdd(sites);
-          await db.entities.bulkAdd(entities);
-
-          console.log('UploadZone: All data stored!');
-          setProgress({ phase: 'storing', progress: 100, message: 'Complete!' });
-          
-          worker.terminate();
-          workerRef.current = null;
-          
-          setTimeout(onComplete, 500);
-        } else if (type === 'error') {
-          setError(workerError);
-          worker.terminate();
-          workerRef.current = null;
-          setProgress(null);
         }
+      );
+
+      console.log('UploadZone: Parsing complete, storing data...');
+      setProgress({ phase: 'storing', progress: 85, message: 'Storing data...' });
+
+      // Store data in IndexedDB
+      const { figures, events, sites, entities } = result;
+      console.log(`UploadZone: Storing ${figures.length} figures, ${events.length} events...`);
+
+      // Create metadata
+      const metadata: WorldMetadata = {
+        name: file.name.replace(/\.xml$/i, ''),
+        version: 'unknown',
+        figureCount: figures.length,
+        eventCount: events.length,
+        siteCount: sites.length,
+        entityCount: entities.length,
       };
 
-      // Handle worker errors
-      worker.onerror = (err) => {
-        console.error('UploadZone: Worker error:', err);
-        setError(`Worker error: ${err.message}`);
-        worker.terminate();
-        workerRef.current = null;
-        setProgress(null);
-      };
+      await db.metadata.add(metadata);
 
-      console.log('UploadZone: Starting worker with file:', file.name, file.size);
+      // Bulk insert
+      await db.bulkAddFigures(figures);
+      await db.bulkAddEvents(events);
+      await db.sites.bulkAdd(sites);
+      await db.entities.bulkAdd(entities);
+
+      console.log('UploadZone: All data stored!');
+      setProgress({ phase: 'storing', progress: 100, message: 'Complete!' });
       
-      // Start parsing - pass file (not transferable, will be cloned)
-      worker.postMessage({
-        type: 'parse',
-        file,
-        totalBytes: file.size,
-      });
+      setTimeout(onComplete, 500);
 
     } catch (err) {
       console.error('UploadZone: Error:', err);
