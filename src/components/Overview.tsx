@@ -45,7 +45,9 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           await new Promise(r => setTimeout(r, 0));
         }
 
-        const maxYear = Math.max(...allFigures.map(f => f.deathYear > 0 ? f.deathYear : 0), 1);
+        const maxYear = allFigures.length > 0 
+          ? Math.max(...allFigures.map(f => f.deathYear > 0 ? f.deathYear : 0), 1)
+          : 1;
         setCurrentYear(maxYear);
         
         const living = allFigures.filter(f => f.deathYear <= 0);
@@ -57,9 +59,11 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         setLoadingProgress(85);
         await new Promise(r => setTimeout(r, 0));
         
-        const sortedKillers = allFigures
-          .filter(f => (f.kills?.length || 0) > 0)
-          .sort((a, b) => (b.kills?.length || 0) - (a.kills?.length || 0));
+        const sortedKillers = allFigures.length > 0
+          ? allFigures
+              .filter(f => (f.kills?.length || 0) > 0)
+              .sort((a, b) => (b.kills?.length || 0) - (a.kills?.length || 0))
+          : [];
         setTopKiller(sortedKillers[0] || null);
 
         const allEntities = await db.entities.toArray();
@@ -91,6 +95,7 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         const raceMap = new Map<string, { count: number; living: number; category: 'civilized' | 'monster' | 'animal' | 'other' }>();
         
         allFigures.forEach(f => {
+          if (!f.race) return; // Skip figures without race
           const current = raceMap.get(f.race) || { count: 0, living: 0, category: getCategory(f.race) };
           current.count++;
           if (f.deathYear <= 0) current.living++;
@@ -125,7 +130,8 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
 
       } catch (err) {
         console.error('Overview error:', err);
-        setLoadingStage('Error loading data');
+        setLoadingStage(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setLoadingProgress(100); // Stop loading
       }
     };
 
@@ -147,15 +153,23 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
   const animalRaces = racePercentages.filter(r => r.category === 'animal');
   // const otherRaces = racePercentages.filter(r => r.category === 'other');
 
-  if (loadingProgress < 100) {
+  if (loadingProgress < 100 || loadingStage.includes('Error')) {
+    const isError = loadingStage.includes('Error');
     return (
       <div className="loading-screen">
         <div className="loading-content">
           <div className="loading-logo">⚒️</div>
-          <p className="loading-stage">{loadingStage}</p>
-          <div className="loading-bar">
-            <div className="loading-fill" style={{ width: `${loadingProgress}%` }} />
-          </div>
+          <p className={`loading-stage ${isError ? 'error' : ''}`}>{loadingStage}</p>
+          {!isError && (
+            <div className="loading-bar">
+              <div className="loading-fill" style={{ width: `${loadingProgress}%` }} />
+            </div>
+          )}
+          {isError && (
+            <button className="btn-retry" onClick={() => window.location.reload()}>
+              Reload
+            </button>
+          )}
         </div>
       </div>
     );

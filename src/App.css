@@ -113,6 +113,26 @@ html, body, #root {
   margin-bottom: 1rem;
 }
 
+.loading-stage.error {
+  color: var(--red);
+}
+
+.btn-retry {
+  margin-top: 1rem;
+  padding: 0.5rem 1.5rem;
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.btn-retry:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
 .loading-bar {
   width: 200px;
   height: 2px;
