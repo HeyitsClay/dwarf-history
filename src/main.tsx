@@ -1,51 +1,36 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
 
 console.log('=== MAIN.TSX STARTING ===')
 
-try {
-  const rootElement = document.getElementById('root')
-  console.log('Root element found:', !!rootElement)
+// Test if root element exists
+const rootElement = document.getElementById('root')
+console.log('Root element:', rootElement)
+
+if (!rootElement) {
+  console.error('Root element not found!')
+} else {
+  console.log('Root element found, clearing...')
+  rootElement.innerHTML = '<p style="color:green;padding:20px;">React loading...</p>'
   
-  if (!rootElement) {
-    throw new Error('Root element not found in DOM')
-  }
-  
-  console.log('Creating React root...')
-  const root = createRoot(rootElement)
-  
-  console.log('Rendering App...')
-  root.render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  )
-  
-  console.log('=== MAIN.TSX COMPLETE ===')
-} catch (error) {
-  console.error('=== FATAL ERROR ===', error)
-  
-  // Show error on page
-  const rootElement = document.getElementById('root')
-  if (rootElement) {
-    rootElement.innerHTML = `
-      <div style="
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        background: #0a0a0a;
-        color: #c0c0c0;
-        font-family: 'Courier New', monospace;
-        padding: 2rem;
-      ">
-        <h1 style="color: #e76f51;">⚠️ Error Starting App</h1>
-        <pre style="color: #d4a373; white-space: pre-wrap; word-break: break-word;">
-${error instanceof Error ? error.stack : String(error)}
-        </pre>
-      </div>
-    `
+  try {
+    console.log('Importing App...')
+    import('./App.tsx').then(({ default: App }) => {
+      console.log('App imported, creating root...')
+      const root = createRoot(rootElement)
+      console.log('Root created, rendering...')
+      root.render(
+        <StrictMode>
+          <App />
+        </StrictMode>,
+      )
+      console.log('=== RENDER COMPLETE ===')
+    }).catch(err => {
+      console.error('Failed to import App:', err)
+      rootElement.innerHTML = `<p style="color:red;padding:20px;">Import error: ${err.message}</p>`
+    })
+  } catch (err) {
+    console.error('Fatal error:', err)
+    rootElement.innerHTML = `<p style="color:red;padding:20px;">Fatal error: ${err}</p>`
   }
 }
