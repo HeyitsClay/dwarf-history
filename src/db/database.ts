@@ -1,6 +1,8 @@
 import Dexie, { type Table } from 'dexie';
 import type { HistoricalFigure, HistoricalEvent, Site, Entity, WorldMetadata } from '../types';
 
+console.log('Database: Initializing...');
+
 export class DwarfHistoryDB extends Dexie {
   figures!: Table<HistoricalFigure, number>;
   events!: Table<HistoricalEvent, number>;
@@ -10,6 +12,8 @@ export class DwarfHistoryDB extends Dexie {
 
   constructor() {
     super('DwarfHistoryDB');
+    console.log('Database: Setting up schema...');
+    
     this.version(1).stores({
       figures: 'id, name, race, deathYear, [name+race]',
       events: 'id, year, type, slayerHfid, hfid, [type+slayerHfid]',
@@ -17,6 +21,8 @@ export class DwarfHistoryDB extends Dexie {
       entities: 'id, name, race',
       metadata: 'name',
     });
+    
+    console.log('Database: Schema ready');
   }
 
   async clearAll(): Promise<void> {
@@ -28,12 +34,22 @@ export class DwarfHistoryDB extends Dexie {
   }
 
   async hasData(): Promise<boolean> {
-    const count = await this.figures.count();
-    return count > 0;
+    try {
+      const count = await this.figures.count();
+      return count > 0;
+    } catch (e) {
+      console.error('Database: Error checking data:', e);
+      return false;
+    }
   }
 
   async getMetadata(): Promise<WorldMetadata | undefined> {
-    return await this.metadata.toCollection().first();
+    try {
+      return await this.metadata.toCollection().first();
+    } catch (e) {
+      console.error('Database: Error getting metadata:', e);
+      return undefined;
+    }
   }
 
   async bulkAddFigures(figures: HistoricalFigure[], progressCallback?: (count: number) => void): Promise<void> {
@@ -80,29 +96,42 @@ export class DwarfHistoryDB extends Dexie {
   }
 }
 
+// Singleton instance
+console.log('Database: Creating instance...');
 export const db = new DwarfHistoryDB();
+console.log('Database: Instance created successfully');
 
 // Storage guard function
 export async function checkStorage(): Promise<{ ok: boolean; warning?: string }> {
+  console.log('Storage: Checking...');
+  
   if (!navigator.storage || !navigator.storage.estimate) {
+    console.log('Storage: API not available, skipping check');
     return { ok: true };
   }
 
-  const estimate = await navigator.storage.estimate();
-  const used = estimate.usage || 0;
-  const quota = estimate.quota || 0;
-  const available = quota - used;
+  try {
+    const estimate = await navigator.storage.estimate();
+    const used = estimate.usage || 0;
+    const quota = estimate.quota || 0;
+    const available = quota - used;
 
-  // Warn if less than 500MB available (hard Safari limit is around this)
-  if (available < 500 * 1024 * 1024) {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    return {
-      ok: false,
-      warning: isIOS 
-        ? 'iOS Safari has limited storage (~50MB). Large Legends files may fail. Consider using Chrome/Edge on desktop.'
-        : `Limited storage available (${Math.round(available / 1024 / 1024)}MB). Large files may cause issues.`,
-    };
+    console.log(`Storage: ${Math.round(used/1024/1024)}MB used, ${Math.round(available/1024/1024)}MB available`);
+
+    // Warn if less than 500MB available (hard Safari limit is around this)
+    if (available < 500 * 1024 * 1024) {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      return {
+        ok: false,
+        warning: isIOS 
+          ? 'iOS Safari has limited storage (~50MB). Large Legends files may fail. Consider using Chrome/Edge on desktop.'
+          : `Limited storage available (${Math.round(available / 1024 / 1024)}MB). Large files may cause issues.`,
+      };
+    }
+
+    return { ok: true };
+  } catch (e) {
+    console.error('Storage: Error checking:', e);
+    return { ok: true };
   }
-
-  return { ok: true };
 }

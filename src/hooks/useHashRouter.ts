@@ -2,11 +2,22 @@ import { useState, useEffect, useCallback } from 'react';
 import type { ViewState } from '../types';
 
 export function useHashRouter() {
-  const [view, setView] = useState<ViewState>(() => parseHash(window.location.hash));
+  const [view, setView] = useState<ViewState>(() => {
+    try {
+      return parseHash(window.location.hash);
+    } catch (e) {
+      console.error('Failed to parse initial hash:', e);
+      return { type: 'upload' };
+    }
+  });
 
   useEffect(() => {
     const handleHashChange = () => {
-      setView(parseHash(window.location.hash));
+      try {
+        setView(parseHash(window.location.hash));
+      } catch (e) {
+        console.error('Hash change error:', e);
+      }
     };
 
     window.addEventListener('hashchange', handleHashChange);
@@ -14,8 +25,12 @@ export function useHashRouter() {
   }, []);
 
   const navigate = useCallback((newView: ViewState) => {
-    const hash = viewToHash(newView);
-    window.location.hash = hash;
+    try {
+      const hash = viewToHash(newView);
+      window.location.hash = hash;
+    } catch (e) {
+      console.error('Navigation error:', e);
+    }
   }, []);
 
   const navigateToFigure = useCallback((id: number) => {
@@ -50,12 +65,17 @@ export function useHashRouter() {
 }
 
 function parseHash(hash: string): ViewState {
-  if (!hash || hash === '#') {
+  console.log('Parsing hash:', hash);
+  
+  if (!hash || hash === '#' || hash === '#/') {
+    console.log('Empty hash, defaulting to upload');
     return { type: 'upload' };
   }
 
   const cleanHash = hash.replace(/^#/, '');
   const parts = cleanHash.split('/').filter(Boolean);
+
+  console.log('Hash parts:', parts);
 
   if (parts.length === 0) {
     return { type: 'upload' };
