@@ -1,0 +1,16 @@
+{
+  "name": "Dwarf History",
+  "short_name": "DwarfHistory",
+  "description": "Dwarf Fortress Legends XML Viewer - Explore your world's history",
+  "start_url": "/dwarf-history/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
