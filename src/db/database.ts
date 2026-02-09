@@ -53,23 +53,53 @@ export class DwarfHistoryDB extends Dexie {
   }
 
   async bulkAddFigures(figures: HistoricalFigure[], progressCallback?: (count: number) => void): Promise<void> {
+    // Remove duplicates by ID
+    const uniqueFigures = Array.from(new Map(figures.map(f => [f.id, f])).values());
     const batchSize = 500;
-    for (let i = 0; i < figures.length; i += batchSize) {
-      const batch = figures.slice(i, i + batchSize);
-      await this.figures.bulkAdd(batch);
+    for (let i = 0; i < uniqueFigures.length; i += batchSize) {
+      const batch = uniqueFigures.slice(i, i + batchSize);
+      await this.figures.bulkPut(batch); // Use bulkPut to overwrite duplicates
       if (progressCallback) {
-        progressCallback(Math.min(i + batchSize, figures.length));
+        progressCallback(Math.min(i + batchSize, uniqueFigures.length));
       }
     }
   }
 
   async bulkAddEvents(events: HistoricalEvent[], progressCallback?: (count: number) => void): Promise<void> {
+    // Remove duplicates by ID
+    const uniqueEvents = Array.from(new Map(events.map(e => [e.id, e])).values());
     const batchSize = 500;
-    for (let i = 0; i < events.length; i += batchSize) {
-      const batch = events.slice(i, i + batchSize);
-      await this.events.bulkAdd(batch);
+    for (let i = 0; i < uniqueEvents.length; i += batchSize) {
+      const batch = uniqueEvents.slice(i, i + batchSize);
+      await this.events.bulkPut(batch); // Use bulkPut to overwrite duplicates
       if (progressCallback) {
-        progressCallback(Math.min(i + batchSize, events.length));
+        progressCallback(Math.min(i + batchSize, uniqueEvents.length));
+      }
+    }
+  }
+
+  async bulkAddSites(sites: Site[], progressCallback?: (count: number) => void): Promise<void> {
+    // Remove duplicates by ID
+    const uniqueSites = Array.from(new Map(sites.map(s => [s.id, s])).values());
+    const batchSize = 500;
+    for (let i = 0; i < uniqueSites.length; i += batchSize) {
+      const batch = uniqueSites.slice(i, i + batchSize);
+      await this.sites.bulkPut(batch); // Use bulkPut to overwrite duplicates
+      if (progressCallback) {
+        progressCallback(Math.min(i + batchSize, uniqueSites.length));
+      }
+    }
+  }
+
+  async bulkAddEntities(entities: Entity[], progressCallback?: (count: number) => void): Promise<void> {
+    // Remove duplicates by ID
+    const uniqueEntities = Array.from(new Map(entities.map(e => [e.id, e])).values());
+    const batchSize = 500;
+    for (let i = 0; i < uniqueEntities.length; i += batchSize) {
+      const batch = uniqueEntities.slice(i, i + batchSize);
+      await this.entities.bulkPut(batch); // Use bulkPut to overwrite duplicates
+      if (progressCallback) {
+        progressCallback(Math.min(i + batchSize, uniqueEntities.length));
       }
     }
   }
@@ -88,11 +118,11 @@ export class DwarfHistoryDB extends Dexie {
   async importFromJSON(jsonStr: string): Promise<void> {
     const data = JSON.parse(jsonStr);
     await this.clearAll();
-    if (data.metadata) await this.metadata.bulkAdd(data.metadata);
-    if (data.figures) await this.figures.bulkAdd(data.figures);
-    if (data.events) await this.events.bulkAdd(data.events);
-    if (data.sites) await this.sites.bulkAdd(data.sites);
-    if (data.entities) await this.entities.bulkAdd(data.entities);
+    if (data.metadata) await this.metadata.bulkPut(data.metadata);
+    if (data.figures) await this.bulkAddFigures(data.figures);
+    if (data.events) await this.bulkAddEvents(data.events);
+    if (data.sites) await this.bulkAddSites(data.sites);
+    if (data.entities) await this.bulkAddEntities(data.entities);
   }
 }
 
