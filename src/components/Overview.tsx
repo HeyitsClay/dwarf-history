@@ -142,11 +142,20 @@ export const Overview = ({ onViewFigures, onViewFigure, onNewWorld }: OverviewPr
           if (f.deathYear <= 0) current.living++;
           raceMap.set(f.race, current);
         });
-        const sortedRaces = Array.from(raceMap.entries())
-          .map(([race, data]) => ({ race, ...data }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 10);
-        setRaceStats(sortedRaces);
+        
+        // Prioritize DWARF, HUMAN, ELF first, then sort rest by count
+        const priorityRaces = ['DWARF', 'HUMAN', 'ELF'];
+        const allRaces = Array.from(raceMap.entries()).map(([race, data]) => ({ race, ...data }));
+        
+        const prioritizedRaces = allRaces
+          .filter(r => priorityRaces.includes(r.race))
+          .sort((a, b) => priorityRaces.indexOf(a.race) - priorityRaces.indexOf(b.race));
+        
+        const otherRaces = allRaces
+          .filter(r => !priorityRaces.includes(r.race))
+          .sort((a, b) => b.count - a.count);
+        
+        setRaceStats([...prioritizedRaces, ...otherRaces].slice(0, 10));
 
         // Stage 7: Death breakdown from figure data
         setLoadingStage('Analyzing deaths...');

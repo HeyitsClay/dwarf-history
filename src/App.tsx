@@ -3,15 +3,13 @@ import { useHashRouter } from './hooks/useHashRouter';
 import { useWorldData, useParsingGuard, useStorageGuard } from './hooks/useWorldData';
 import { db } from './db/database';
 import { UploadZone } from './components/UploadZone';
-import { FigureList } from './components/FigureList';
-import { FigureDetail } from './components/FigureDetail';
 import { Overview } from './components/Overview';
 import './App.css';
 
 function App() {
   console.log('App: Rendering...');
   try {
-    const { view, navigate, navigateToFigure, navigateToSite, navigateToList, navigateToUpload } = useHashRouter();
+    const { view, navigate, navigateToFigure, navigateToUpload } = useHashRouter();
     const { hasData, metadata, loading, clearWorld, refreshData } = useWorldData();
     const { warning, checked } = useStorageGuard();
     const [isParsing, setIsParsing] = useState(false);
@@ -23,7 +21,7 @@ function App() {
       if (!loading && hasData && view.type === 'upload') {
         navigate({ type: 'overview' });
       }
-    }, [loading, hasData, view.type]);
+    }, [loading, hasData, view.type, navigate]);
 
     useParsingGuard(isParsing);
 
@@ -72,45 +70,13 @@ function App() {
           );
         
         case 'overview':
+        case 'list': // Fallback for old links
           return (
             <Overview
-              onViewFigures={navigateToList}
+              onViewFigures={() => {}}
               onViewFigure={navigateToFigure}
               onNewWorld={() => navigateToUpload()}
             />
-          );
-        
-        case 'list':
-          return <FigureList onSelectFigure={navigateToFigure} />;
-        
-        case 'figure':
-          return (
-            <FigureDetail
-              figureId={view.id}
-              onNavigateFigure={navigateToFigure}
-              onNavigateSite={navigateToSite}
-              onBack={navigateToList}
-            />
-          );
-        
-        case 'site':
-          return (
-            <div className="placeholder-view">
-              <h2>Site Details</h2>
-              <p>Site ID: {view.id}</p>
-              <p>Site view coming soon...</p>
-              <button onClick={navigateToList}>Back to List</button>
-            </div>
-          );
-        
-        case 'entity':
-          return (
-            <div className="placeholder-view">
-              <h2>Entity Details</h2>
-              <p>Entity ID: {view.id}</p>
-              <p>Entity view coming soon...</p>
-              <button onClick={navigateToList}>Back to List</button>
-            </div>
           );
         
         default:
@@ -121,7 +87,7 @@ function App() {
     return (
       <div className="app">
         <header className="app-header">
-          <h1 onClick={navigateToList} style={{ cursor: 'pointer' }}>
+          <h1 onClick={() => navigate({ type: 'overview' })} style={{ cursor: 'pointer' }}>
             ⚒️ Dwarf History
           </h1>
           {metadata && (
