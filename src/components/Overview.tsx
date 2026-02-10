@@ -425,13 +425,26 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
               <span className="info-icon">💎</span>
               <span className="info-title">Artifact Keepers</span>
             </div>
-            <div className="info-list">
-              {artifactHolders.map((holder, idx) => (
-                <div key={idx} className="info-item">
-                  <span className="info-name">{holder.entity.name}</span>
-                  <span className="info-value">{holder.count} ({holder.percentage.toFixed(1)}%)</span>
-                </div>
-              ))}
+            <div className="info-bars">
+              {artifactHolders.map((holder, idx) => {
+                const colors = ['#d4a373', '#2a9d8f', '#e9c46a', '#e76f51', '#9b2226', '#6b6b6b'];
+                const color = colors[idx % colors.length];
+                return (
+                  <div key={idx} className="info-bar">
+                    <div className="info-bar-row">
+                      <span className="info-bar-name">{holder.entity.name}</span>
+                      <span className="info-bar-value">{holder.count}</span>
+                    </div>
+                    <div className="info-bar-track">
+                      <div 
+                        className="info-bar-fill"
+                        style={{ width: `${Math.max(holder.percentage, 1)}%`, backgroundColor: color }}
+                      />
+                    </div>
+                    <span className="info-bar-percent">{holder.percentage.toFixed(1)}%</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
