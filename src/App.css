@@ -253,6 +253,9 @@ html, body, #root {
 
 /* Legends Section */
 .legends-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
   margin-bottom: 2.5rem;
 }
 
@@ -260,12 +263,7 @@ html, body, #root {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 1.25rem;
-  margin-bottom: 1rem;
-}
-
-.legend-block:last-child {
-  margin-bottom: 0;
+  padding: 1.5rem;
 }
 
 .legend-block.killer-highlight {
@@ -569,5 +567,10 @@ html, body, #root {
 
   .app-header h1 {
     font-size: 0.8rem;
+  }
+
+  .legends-section {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
