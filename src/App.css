@@ -37,9 +37,9 @@ html, body, #root {
 
 /* Header - Minimal */
 .app-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 1rem 1.5rem;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
@@ -50,19 +50,24 @@ html, body, #root {
   color: var(--accent);
   letter-spacing: 2px;
   text-transform: uppercase;
+  justify-self: start;
+}
+
+.world-info {
+  text-align: center;
+  justify-self: center;
 }
 
 .world-name {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-bottom: 0.25rem;
-  display: block;
+  font-size: 0.9rem;
+  color: var(--text);
+  letter-spacing: 1px;
 }
 
-.world-stats {
-  display: block;
-  font-size: 0.75rem;
-  color: var(--text-muted);
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-self: end;
 }
 
 .header-actions {
@@ -156,7 +161,7 @@ html, body, #root {
 
 /* Overview Dashboard */
 .overview-dashboard {
-  max-width: 700px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 2rem 1.5rem;
 }
@@ -318,11 +323,11 @@ html, body, #root {
   color: var(--text-muted);
 }
 
-/* Stats Grid Side by Side */
+/* Stats Grid - 3 Columns */
 .stats-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
@@ -375,6 +380,10 @@ html, body, #root {
 .stat-value.kill {
   color: var(--red);
   font-weight: bold;
+}
+
+.stat-value.dead {
+  color: var(--text-muted);
 }
 
 .stat-track {
@@ -540,6 +549,10 @@ html, body, #root {
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+  }
+
+  .stats-column {
+    padding: 1rem;
   }
 
   .count-grid {
