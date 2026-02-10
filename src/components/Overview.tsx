@@ -13,25 +13,54 @@ const getCategoryBestTitle = (category: string): string => {
   const titles: Record<string, string> = {
     'Warfare': 'Warlord',
     'Metalworking': 'Master Smith',
-    'Craftsmanship': 'Artisan Supreme',
+    'Gem Working': 'Gem Sage',
+    'Stoneworking': 'Stone Master',
+    'Woodworking': 'Wood Sage',
+    'Fiber & Leather': 'Master Tailor',
+    'Pottery & Glass': 'Ceramic Master',
+    'Organic Crafts': 'Bone Artisan',
     'Construction': 'High Builder',
+    'Engineering': 'Master Engineer',
     'Healing': 'Grand Healer',
     'Agriculture': 'Harvest Sovereign',
-    'Animal Arts': 'Beastmaster',
-    'Woodsmanship': 'Forest King',
+    'Food Preparation': 'Master Chef',
+    'Animal Care': 'Beastmaster',
+    'Animal Products': 'Husbandry Master',
+    'Hunting & Trapping': 'Master Hunter',
     'Fishing': 'Lord of Waters',
-    'Commerce': 'Trade Prince',
+    'Riding': 'Master Rider',
+    'Vehicle Operation': 'Wagon Master',
+    'Leadership': 'High Commander',
     'Social Arts': 'Grand Diplomat',
     'Scholarship': 'Sage',
-    'Records & Lore': 'Loremaster',
-    'Performance': 'Legendary Performer',
+    'Teaching & Education': 'Grand Professor',
+    'Writing & Records': 'Master Scribe',
+    'Literature': 'Master Author',
+    'Speech': 'Orator Supreme',
+    'Music': 'Virtuoso',
+    'Dance': 'Choreography Master',
+    'Comedy': 'Court Jester',
     'Athletics': 'Champion',
+    'Awareness': 'Master Observer',
     'Industry': 'Production Chief',
-    'Service': 'Master Servant',
+    'Mining & Refining': 'Mine Lord',
+    'Trade & Commerce': 'Trade Prince',
+    'Law & Order': 'High Judge',
+    'Thievery': 'Master Thief',
+    'Stealth': 'Shadow Walker',
+    'Traps & Trickery': 'Trap Master',
     'Survival': 'Wilderness Guide',
-    'Subterfuge': 'Shadow Master',
+    'Gathering': 'Master Gatherer',
+    'Dissection': 'Master Anatomist',
+    'Vermin Handling': 'Vermin Lord',
+    'Labor': 'Foreman',
+    'Economic': 'Master Financier',
+    'Religion': 'High Priest',
+    'Magic': 'Archmage',
+    'Nature & Druidism': 'Archdruid',
     'Mental Discipline': 'Mind Sage',
-    'Supernatural': 'Mystic',
+    'Memory & Learning': 'Memory Master',
+    'Patience & Temperament': 'Zen Master',
     'Miscellaneous': 'Jack of All Trades'
   };
   return titles[category] || 'Master';
@@ -240,74 +269,161 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         // Skills aggregation - ALL skills grouped by category
         const figuresWithSkills = allFigures.filter(f => f.hfSkills && f.hfSkills.length > 0);
         
-        // Skill category mapping - reorganized into logical groups
+        // Skill category mapping - comprehensive coverage of ALL Dwarf Fortress skills
         const getSkillCategory = (skill: string): string => {
           const s = skill.toUpperCase();
           
-          // WARFARE - All combat skills, weapons, armor, tactics
-          if (['SWORD', 'SWORDS', 'SWORDSMANSHIP', 'SWORDSMAN', 'AXE', 'AXEMAN', 'AXEMANSHIP', 'MACE', 'MACEMAN', 'MACEMANSHIP', 'HAMMER', 'HAMMERMAN', 'HAMMERMANSHIP', 'SPEAR', 'SPEARMAN', 'SPEARMANSHIP', 'PIKE', 'PIKEMAN', 'PIKEMANSHIP', 'CROSSBOW', 'CROSSBOWMAN', 'BOW', 'BOWMAN', 'BOWYER', 'DAGGER', 'KNIFE', 'WHIP', 'SCOURGE', 'ARMOR', 'ARMOR_USER', 'SHIELD', 'SHIELD_USER', 'DODGE', 'DODGING', 'WRESTLE', 'WRESTLING', 'BITE', 'GRASP', 'GRASP_STRIKE', 'STANCE', 'STANCE_STRIKE', 'MELEE', 'MELEE_COMBAT', 'RANGED', 'RANGED_COMBAT', 'THROW', 'THROWING', 'SIEGE', 'SIEGEOPERATE', 'SIEGE_OPERATE', 'LEADERSHIP', 'TEACHING', 'MILITARY_TACTICS', 'DISCIPLINE', 'TACTICS', 'COMBAT', 'WAR', 'FIGHTING', 'PARRY', 'BLOCK', 'KICK', 'PUNCH', 'STRIKE', 'SIEGE_ENGINEERING', 'SIEGE_ENGINEER', 'BALLISTA', 'CATAPULT'].includes(s)) return 'Warfare';
+          // WARFARE - All weapons, armor, combat, military
+          if (['SWORD', 'SWORDS', 'SWORDSMANSHIP', 'SWORDSMAN', 'AXE', 'AXEMAN', 'AXEMANSHIP', 'MACE', 'MACEMAN', 'MACEMANSHIP', 'HAMMER', 'HAMMERMAN', 'HAMMERMANSHIP', 'SPEAR', 'SPEARMAN', 'SPEARMANSHIP', 'PIKE', 'PIKEMAN', 'PIKEMANSHIP', 'CROSSBOW', 'CROSSBOWMAN', 'BOW', 'BOWMAN', 'BOWYER', 'DAGGER', 'KNIFE', 'WHIP', 'SCOURGE', 'BLOWGUN', 'BLOW_GUN', 'BLOWGUNMAN', 'ARMOR', 'ARMOR_USER', 'SHIELD', 'SHIELD_USER', 'DODGE', 'DODGING', 'WRESTLE', 'WRESTLING', 'BITE', 'GRASP', 'GRASP_STRIKE', 'STANCE', 'STANCE_STRIKE', 'MELEE', 'MELEE_COMBAT', 'RANGED', 'RANGED_COMBAT', 'THROW', 'THROWING', 'SIEGE', 'SIEGEOPERATE', 'SIEGE_OPERATE', 'SIEGE_ENGINEERING', 'SIEGE_ENGINEER', 'BALLISTA', 'CATAPULT', 'LEADERSHIP', 'TEACHING', 'MILITARY_TACTICS', 'DISCIPLINE', 'TACTICS', 'COMBAT', 'WAR', 'FIGHTING', 'PARRY', 'BLOCK', 'KICK', 'PUNCH', 'STRIKE', 'SQUAD', 'COMMAND'].includes(s)) return 'Warfare';
           
-          // METALWORKING - All smithing, smelting, forging, gems
-          if (['WEAPONSMITH', 'WEAPONSMITHING', 'ARMORSMITH', 'ARMORSMITHING', 'BLACKSMITH', 'BLACKSMITHING', 'METALCRAFT', 'SMELT', 'SMELTING', 'FORGE_WEAPON', 'FORGE_ARMOR', 'FORGE_FURNITURE', 'CUTGEM', 'CUT_GEM', 'ENCRUSTGEM', 'ENCRUST_GEM', 'EXTRACT_STRAND', 'METALLURGY'].includes(s)) return 'Metalworking';
+          // METALWORKING - Smithing, smelting, forging, strand extraction
+          if (['WEAPONSMITH', 'WEAPONSMITHING', 'ARMORSMITH', 'ARMORSMITHING', 'BLACKSMITH', 'BLACKSMITHING', 'METALCRAFT', 'SMELT', 'SMELTING', 'FORGE_WEAPON', 'FORGE_ARMOR', 'FORGE_FURNITURE', 'EXTRACT_STRAND', 'STRAND_EXTRACT', 'METALLURGY'].includes(s)) return 'Metalworking';
           
-          // CRAFTSMANSHIP - Wood, stone, glass, leather, cloth, crafts
-          if (['CARPENTRY', 'WOODCRAFT', 'STONECRAFT', 'POTTERY', 'GLASSMAKER', 'GLASSMAKING', 'LEATHERWORK', 'LEATHERWORKING', 'CLOTHESMAKING', 'TANNING', 'TANNER', 'DYER', 'DYEING', 'WEAVING', 'SPINNING', 'PAPERMAKING', 'BOOKBINDING', 'WAX_WORKING', 'GEM_SETTING', 'BONE_CARVE', 'BONE_CARVING', 'IVORY_CARVE', 'IVORY_CARVING', 'STONE_CARVE', 'STONE_CARVING', 'WOOD_CARVE', 'WOOD_CARVING'].includes(s)) return 'Craftsmanship';
+          // GEMS & ENCRUSTING - Gems, cutting, setting, encrusting
+          if (['CUTGEM', 'CUT_GEM', 'ENCRUSTGEM', 'ENCRUST_GEM', 'GEM_CUTTING', 'GEM_SETTING', 'GEM_ENCRUSTING', 'JEWELER', 'JEWELRY', 'GEMS', 'GEM_CRAFT'].includes(s)) return 'Gem Working';
           
-          // CONSTRUCTION - Building, architecture, mechanics, mining, masonry
-          if (['MINING', 'MASONRY', 'ARCHITECTURE', 'ARCHITECT', 'DESIGNBUILDING', 'DESIGN_BUILDING', 'MECHANICS', 'MECHANIC', 'OPERATE_PUMP', 'PUMP_OPERATION', 'PUMP', 'DETAILSTONE', 'DETAIL_STONE', 'ENCASEFORTIFICATION', 'ENCASE_FORTIFICATION', 'CONSOLEFORTIFICATION', 'CONSOLE_FORTIFICATION', 'CONSTRUCTION', 'BUILDING'].includes(s)) return 'Construction';
+          // STONEWORKING - Stone crafts, detailing, carving, masonry
+          if (['STONECRAFT', 'DETAILSTONE', 'DETAIL_STONE', 'STONE_CARVE', 'STONE_CARVING', 'ENCASEFORTIFICATION', 'ENCASE_FORTIFICATION', 'CONSOLEFORTIFICATION', 'CONSOLE_FORTIFICATION', 'MASONRY', 'STONE', 'ROCK_CRAFT', 'STONE_DRESSING', 'STONE_DETAILING'].includes(s)) return 'Stoneworking';
+          
+          // WOODWORKING - Carpentry, wood crafts, carving, cutting
+          if (['CARPENTRY', 'WOODCRAFT', 'WOOD_CARVE', 'WOOD_CARVING', 'WOODCUTTING', 'WOOD_CUTTING', 'FORESTRY', 'LUMBER', 'LUMBERJACK', 'WOODSMAN', 'FURNITURE', 'WOODWORK'].includes(s)) return 'Woodworking';
+          
+          // FIBER & LEATHER - Cloth, leather, weaving, tailoring
+          if (['LEATHERWORK', 'LEATHERWORKING', 'CLOTHESMAKING', 'TANNING', 'TANNER', 'DYER', 'DYEING', 'WEAVING', 'SPINNING', 'CLOTH', 'TAILOR', 'SEWING', 'KNITTING', 'EMBROIDERY', 'LEATHER_CRAFT', 'CLOTH_CRAFT'].includes(s)) return 'Fiber & Leather';
+          
+          // POTTERY & GLASS - Ceramics, glassmaking, glazing
+          if (['POTTERY', 'GLASSMAKER', 'GLASSMAKING', 'GLAZING', 'CERAMICS', 'KILN', 'CLAY', 'GLASS_CRAFT', 'PORCELAIN'].includes(s)) return 'Pottery & Glass';
+          
+          // ORGANIC CRAFTS - Bone, ivory, shell, horn, pearl
+          if (['BONE_CARVE', 'BONE_CARVING', 'IVORY_CARVE', 'IVORY_CARVING', 'SHELL_CRAFT', 'HORN_CRAFT', 'PEARL_CRAFT', 'CORAL_CRAFT', 'SHELL', 'BONE', 'IVORY', 'HORN', 'PEARL'].includes(s)) return 'Organic Crafts';
+          
+          // CONSTRUCTION - Architecture, mechanics, mining, pumps
+          if (['MINING', 'ARCHITECTURE', 'ARCHITECT', 'DESIGNBUILDING', 'DESIGN_BUILDING', 'MECHANICS', 'MECHANIC', 'OPERATE_PUMP', 'PUMP_OPERATION', 'PUMP', 'CONSTRUCTION', 'BUILDING', 'WALL', 'FLOOR', 'ROOF', 'SUPPORT', 'CHANNEL', 'RAMP', 'STAIR', 'FORTIFICATION', 'BRIDGE', 'ROAD', 'WELL'].includes(s)) return 'Construction';
+          
+          // ENGINEERING - Complex machinery, siege, trap engineering
+          if (['TRAP_ENGINEERING', 'TRAP_COMPONENT', 'LINK', 'MECHANISM', 'GEAR_ASSEMBLY', 'AXLE', 'WATER_WHEEL', 'WINDMILL', 'SCREW_PUMP', 'PISTON', 'LEVER', 'PRESSURE_PLATE', 'CAGE_TRAP', 'STONE_TRAP', 'WEAPON_TRAP', 'SPIKE', 'SERRATED_DISC', 'MENACING_SPIKE', 'GIANT_AXE', 'ENORMOUS_CORKSCREW'].includes(s)) return 'Engineering';
           
           // HEALING - All medical skills
-          if (['DIAGNOSE', 'DIAGNOSIS', 'SURGERY', 'SURGEON', 'SET_BONE', 'SET_BONES', 'SUTURE', 'SUTURING', 'DRESS_WOUNDS', 'DRESSING_WOUNDS', 'WOUND_DRESSING', 'CRUTCH_WALK', 'CRUTCH_WALKING', 'PHYSICIAN', 'DOCTOR', 'MEDIC', 'FIRST_AID'].includes(s)) return 'Healing';
+          if (['DIAGNOSE', 'DIAGNOSIS', 'SURGERY', 'SURGEON', 'SET_BONE', 'SET_BONES', 'SUTURE', 'SUTURING', 'DRESS_WOUNDS', 'DRESSING_WOUNDS', 'WOUND_DRESSING', 'CRUTCH_WALK', 'CRUTCH_WALKING', 'PHYSICIAN', 'DOCTOR', 'MEDIC', 'FIRST_AID', 'BANDAGE', 'SPLINT', 'CAST', 'MEDICAL_PRACTICE'].includes(s)) return 'Healing';
           
-          // AGRICULTURE - Farming, plants, food production
-          if (['GROWING', 'PLANT', 'PLANTS', 'HERBALISM', 'HERBALIST', 'FARMING', 'FARMING_FIELD', 'MILLING', 'PROCESSPLANTS', 'PROCESS_PLANTS', 'BREWING', 'COOKING', 'CHEESEMAKING', 'PRESSING', 'BEEKEEPING', 'BEE_KEEPING', 'WAX_WORKING', 'GARDENING', 'CULTIVATION', 'THRESHING', 'BUTCHER', 'BUTCHERING'].includes(s)) return 'Agriculture';
+          // AGRICULTURE - Farming, plants, brewing, cooking
+          if (['GROWING', 'PLANT', 'PLANTS', 'HERBALISM', 'HERBALIST', 'FARMING', 'FARMING_FIELD', 'MILLING', 'PROCESSPLANTS', 'PROCESS_PLANTS', 'BREWING', 'COOKING', 'CHEESEMAKING', 'PRESSING', 'BEEKEEPING', 'BEE_KEEPING', 'WAX_WORKING', 'GARDENING', 'CULTIVATION', 'THRESHING', 'QUERN', 'MILLSTONE', 'PLANT_PROCESSING'].includes(s)) return 'Agriculture';
           
-          // ANIMAL ARTS - Animal care, hunting, everything animal-related
-          if (['ANIMALCARE', 'ANIMAL_CARE', 'ANIMALTRAIN', 'ANIMAL_TRAIN', 'TRAIN_ANIMALS', 'TAME', 'TAMING', 'RIDING', 'RIDER', 'HUNTING', 'HUNTER', 'TRAPPING', 'SNEAK', 'SNEAKING', 'AMBUSH', 'AMBUSHING', 'MILK', 'MILKING', 'SHEAR', 'SHEARER', 'SHEARING', 'POULTRY', 'POULTRY_KEEPING', 'ANIMAL_DISSECT', 'ANIMAL_DISSECTION'].includes(s)) return 'Animal Arts';
+          // FOOD PREPARATION - Butchery, cleaning, processing
+          if (['BUTCHER', 'BUTCHERING', 'CLEAN', 'CLEANING', 'GUT', 'GUTTING', 'PREPARE_MEAL', 'MEAL_PREPARATION', 'KITCHEN', 'COOK', 'CHEF', 'BAKING', 'SLAUGHTER', 'MEAT_CRAFT', 'FAT_RENDERING', 'RENDER_FAT', 'TALLOW'].includes(s)) return 'Food Preparation';
+          
+          // ANIMAL CARE - Animal training, care, gelding
+          if (['ANIMALCARE', 'ANIMAL_CARE', 'ANIMALTRAIN', 'ANIMAL_TRAIN', 'TRAIN_ANIMALS', 'TAME', 'TAMING', 'TRAINING', 'PET', 'WAR_TRAIN', 'HUNT_TRAIN', 'GELD', 'GELDING', 'CASTRATE', 'CASTRATION', 'KENNEL', 'PASTURE', 'ZOO', 'WAR_ANIMAL', 'HUNTING_ANIMAL', 'GUARD_ANIMAL'].includes(s)) return 'Animal Care';
+          
+          // ANIMAL PRODUCTS - Milking, shearing, egg collection
+          if (['MILK', 'MILKING', 'SHEAR', 'SHEARER', 'SHEARING', 'POULTRY', 'POULTRY_KEEPING', 'EGG', 'EGG_COLLECTION', 'HONEY', 'HONEY_COLLECTING', 'WAX', 'BEESWAX', 'SILK', 'SHEEP', 'GOAT', 'COW', 'YAK', 'ALPACA'].includes(s)) return 'Animal Products';
+          
+          // HUNTING & TRAPPING - Hunting, ambush, trapping, sneaking
+          if (['HUNTING', 'HUNTER', 'TRAPPING', 'SNEAK', 'SNEAKING', 'AMBUSH', 'AMBUSHING', 'STALK', 'STALKING', 'TRACK', 'TRACKING', 'CAGE_TRAP', 'ANIMAL_TRAP', 'LEASH', 'RESTRAINT', 'GAME_KEEPING', 'WILDLIFE'].includes(s)) return 'Hunting & Trapping';
           
           // FISHING - All fish-related
-          if (['FISH', 'FISHING', 'CLEAN_FISH', 'FISH_CLEANING', 'DISSECT_FISH', 'FISH_DISSECTION'].includes(s)) return 'Fishing';
+          if (['FISH', 'FISHING', 'CLEAN_FISH', 'FISH_CLEANING', 'DISSECT_FISH', 'FISH_DISSECTION', 'FISHERMAN', 'FISHERY', 'AQUACULTURE', 'NET', 'ROD', 'LINE_FISHING'].includes(s)) return 'Fishing';
           
-          // SOCIAL ARTS - Leadership, persuasion, social skills
-          if (['LEADERSHIP', 'TEACHING', 'PERSUASION', 'NEGOTIATION', 'CONSULT', 'CONSULTING', 'JUDGING_INTENT', 'APPRAISAL', 'FLATTERY', 'INTIMIDATION', 'CONVERSATION', 'COMEDY', 'PACIFY', 'PACIFICATION', 'CONSOLE', 'CONSOLATION', 'LYING', 'ORGANIZATION', 'MANAGEMENT', 'LAW', 'JUDGING', 'DIPLOMACY', 'PUBLIC_SPEAKING'].includes(s)) return 'Social Arts';
+          // RIDING - All mount-related skills
+          if (['RIDING', 'RIDER', 'MOUNT', 'MOUNTED_COMBAT', 'CAVALRY', 'HORSE', 'CAMEL', 'ELEPHANT', 'GRIFFON', 'DRAGON_MOUNT'].includes(s)) return 'Riding';
           
-          // SCHOLARSHIP - Knowledge, research, mental skills
-          if (['KNOWLEDGE', 'STUDENT', 'RESEARCHER', 'RESEARCH', 'CRITICAL_THINKING', 'LOGIC', 'MATHEMATICS', 'ASTRONOMY', 'CHEMISTRY', 'BIOLOGY', 'GEOGRAPHY', 'MEDICAL_KNOWLEDGE', 'MEDICINE', 'SCHOLAR', 'SCIENCE', 'STRATEGY', 'TRACKING', 'OBSERVATION'].includes(s)) return 'Scholarship';
+          // VEHICLE OPERATION - Minecarts, wagons, boats
+          if (['MINECART', 'RAIL', 'ROLLER', 'WAGON', 'CART', 'VEHICLE', 'DRIVING', 'OPERATE_VEHICLE', 'PUSH_CART', 'GUIDE_CART', 'BOAT', 'SHIP', 'SAILING', 'NAVIGATE', 'HELM', 'CAPTAIN'].includes(s)) return 'Vehicle Operation';
           
-          // RECORDS & ADMIN - Writing, record keeping, accounting
-          if (['RECORD_KEEPING', 'WRITING', 'WRITER', 'READING', 'READER', 'SPEAKING', 'SPEAKER', 'PROSE', 'POETRY', 'POET', 'STORYTELLING', 'STORYTELLER', 'BOOKBINDING', 'SCROLL', 'LITERACY', 'ADMINISTRATION', 'ACCOUNTING'].includes(s)) return 'Records & Lore';
+          // SOCIAL ARTS - Persuasion, negotiation, flattery
+          if (['PERSUASION', 'NEGOTIATION', 'CONSULT', 'CONSULTING', 'JUDGING_INTENT', 'FLATTERY', 'INTIMIDATION', 'CONVERSATION', 'PACIFY', 'PACIFICATION', 'CONSOLE', 'CONSOLATION', 'LYING', 'DECEPTION', 'INSPIRE', 'INSPIRATION', 'ENTHRALL', 'CHARM', 'CHARISMA', 'ETIQUETTE', 'MANNERS'].includes(s)) return 'Social Arts';
           
-          // PERFORMANCE - Music, dance, entertainment
-          if (['MUSIC', 'MUSICIAN', 'SINGING', 'SINGER', 'DANCING', 'DANCER', 'PLAY_KEYBOARD', 'PLAY_STRING', 'PLAY_WIND', 'PLAY_PERCUSSION', 'PERFORMANCE', 'INSTRUMENT', 'ACTING', 'COMEDY'].includes(s)) return 'Performance';
+          // LEADERSHIP - Command, organization, military leadership
+          if (['LEADERSHIP', 'MILITARY_TACTICS', 'TACTICS', 'STRATEGY', 'COMMAND', 'SQUAD_LEAD', 'ORGANIZATION', 'MANAGEMENT', 'COORDINATION', 'CHAIN_OF_COMMAND', 'RANK', 'OFFICER', 'GENERAL', 'CAPTAIN', 'LIEUTENANT', 'SERGEANT', 'CORPORAL'].includes(s)) return 'Leadership';
           
-          // ATHLETICS - Physical activities, movement
-          if (['CLIMBING', 'CLIMBER', 'SWIMMING', 'SWIMMER', 'THROW', 'THROWING', 'BALANCE', 'COORDINATION', 'SITUATIONAL_AWARENESS', 'KINESIOLOGIC_AWARENESS', 'DIRECTION_SENSE', 'ATHLETICS', 'FITNESS', 'RUNNING', 'JUMPING'].includes(s)) return 'Athletics';
+          // SCHOLARSHIP - Knowledge, research, science, observation
+          if (['KNOWLEDGE', 'STUDENT', 'RESEARCHER', 'RESEARCH', 'CRITICAL_THINKING', 'LOGIC', 'MATHEMATICS', 'ASTRONOMY', 'CHEMISTRY', 'BIOLOGY', 'GEOGRAPHY', 'MEDICAL_KNOWLEDGE', 'MEDICINE', 'SCHOLAR', 'SCIENCE', 'OBSERVATION', 'ANALYSIS', 'HISTORY', 'ARCHEOLOGY', 'GEOLOGY', 'METEOROLOGY', 'PHYSICS', 'ALCHEMY', 'LIBRARY', 'SCRIVAL_HALL'].includes(s)) return 'Scholarship';
           
-          // SERVICE - Cleaning, laundry, low-skill labor
-          if (['LAUNDERING', 'CLEANING', 'HAULING', 'SERVANT', 'PEASANT', 'LABOR', 'FOOD_PREP', 'PREPARE_FOOD', 'PLANT_GATHERING', 'FOOD_PRODUCTION', 'FOOD_PROCESSING', 'PROCESS_FOOD'].includes(s)) return 'Service';
+          // TEACHING & EDUCATION - Teaching, student, learning
+          if (['TEACHING', 'TEACHER', 'INSTRUCTOR', 'PROFESSOR', 'MENTOR', 'APPRENTICE', 'LEARNING', 'EDUCATION', 'SCHOOL', 'ACADEMY', 'UNIVERSITY', 'LECTURE', 'DEMONSTRATION'].includes(s)) return 'Teaching & Education';
           
-          // WOODSMANSHIP - Wood cutting, forestry, nature gathering
-          if (['WOODCUTTING', 'WOOD_CUTTING', 'CARPENTRY', 'FORESTRY', 'LUMBER', 'LUMBERJACK', 'WOODSMAN', 'CARTOGRAPHY', 'NAVIGATION'].includes(s)) return 'Woodsmanship';
+          // WRITING & RECORDS - Writing, reading, record keeping
+          if (['WRITING', 'WRITER', 'READING', 'READER', 'RECORD_KEEPING', 'CLERK', 'SCRIBE', 'COPYIST', 'LITERACY', 'ADMINISTRATION', 'ACCOUNTING', 'LEDGER', 'BOOKKEEPING', 'REGISTRY', 'CENSUS', 'ARCHIVE', 'DOCUMENT'].includes(s)) return 'Writing & Records';
           
-          // INDUSTRY - Chemical production, materials processing
-          if (['SOAP_MAKING', 'LYE_MAKING', 'POTASH_MAKING', 'ASH_PRODUCTION', 'RENDER_FAT', 'GLAZING', 'POTASH', 'LYE', 'SOAP', 'RENDERING', 'ASH', 'FIRE_MAKING', 'FIRE Starting'].includes(s)) return 'Industry';
+          // LITERATURE - Prose, poetry, storytelling
+          if (['PROSE', 'POETRY', 'POET', 'STORYTELLING', 'STORYTELLER', 'AUTHOR', 'NOVEL', 'EPIC', 'SAGA', 'LEGEND', 'MYTH', 'FABLE', 'FICTION', 'NONFICTION', 'ESSAY', 'LETTER', 'MANUSCRIPT', 'SCROLL', 'CODEX', 'BOOKBINDING', 'PAPERMAKING', 'INK', 'QUILL'].includes(s)) return 'Literature';
           
-          // SUBTERFUGE - Stealth, theft, trickery
-          if (['LOCKPICKING', 'PICKPOCKET', 'STEALING', 'STEALTH', 'DISGUISE', 'POISON', 'POISONING', 'TRAPS', 'TRAP_ENGINEERING'].includes(s)) return 'Subterfuge';
+          // SPEECH - Speaking, oration, rhetoric
+          if (['SPEAKING', 'SPEAKER', 'ORATORY', 'RHETORIC', 'DEBATE', 'ARGUMENT', 'PERSUASIVE_SPEAKING', 'PUBLIC_SPEAKING', 'ELOQUENCE', 'DICTION', 'PRONUNCIATION', 'ACCENT', 'LANGUAGE', 'TRANSLATION', 'INTERPRETATION', 'DIPLOMACY', 'NEGOTIATION'].includes(s)) return 'Speech';
           
-          // COMMERCE - Trading, appraisal, valuation
-          if (['TRADE', 'TRADING', 'MERCHANT', 'BARGAINING', 'EVALUATE_GOOD', 'EVALUATE_GOODS', 'APPRAISAL', 'PRICE', 'VALUE', 'COMMERCE', 'BUSINESS', 'PROFIT'].includes(s)) return 'Commerce';
+          // MUSIC - All music and instruments
+          if (['MUSIC', 'MUSICIAN', 'SINGING', 'SINGER', 'PLAY_KEYBOARD', 'PLAY_STRING', 'PLAY_WIND', 'PLAY_PERCUSSION', 'INSTRUMENT', 'COMPOSITION', 'CONDUCTING', 'PERFORMANCE', 'MUSICAL', 'LUTE', 'HARP', 'DRUM', 'FLUTE', 'TRUMPET', 'HARPSICHORD', 'PIANO', 'VIOLIN', 'GUITAR'].includes(s)) return 'Music';
           
-          // SURVIVAL - Wilderness, primitive skills
-          if (['KNAPPING', 'BONE_CARVE', 'BONE_CARVING', 'FORAGE', 'FORAGING', 'WILDERNESS', 'SURVIVAL', 'CAMPING', 'SHELTER', 'FIRE_BUILDING', 'PRIMITIVE'].includes(s)) return 'Survival';
+          // DANCE - Dancing and choreography
+          if (['DANCING', 'DANCER', 'CHOREOGRAPHY', 'BALLET', 'PERFORMANCE_DANCE', 'RITUAL_DANCE', 'SOCIAL_DANCE', 'FOLK_DANCE'].includes(s)) return 'Dance';
           
-          // MENTAL - Memory, willpower, focus
-          if (['MEMORY', 'WILLPOWER', 'FOCUS', 'CONCENTRATION', 'PATIENCE', 'DISCIPLINE', 'MEDITATION', 'MIND', 'MENTAL', 'PSYCHIC', 'INTUITION'].includes(s)) return 'Mental Discipline';
+          // COMEDY & SATIRE - Comedy, jokes, satire
+          if (['COMEDY', 'COMEDIAN', 'JOKE', 'HUMOR', 'SATIRE', 'PARODY', 'WIT', 'PUN', 'MIME', 'CLOWN', 'JESTER', 'BUFFOON', 'LIGHT_HEARTED', 'AMUSEMENT', 'ENTERTAINMENT'].includes(s)) return 'Comedy';
           
-          // SUPERNATURAL - Magic, divine, weird stuff
-          if (['MAGIC', 'SPELL', 'RITUAL', 'NECROMANCY', 'DIVINATION', 'PROPHECY', 'CURSE', 'BLESSING', 'COMMUNE', 'SPIRIT', 'GHOST', 'UNDEAD', 'VAMPIRE', 'WEREWOLF', 'LYCANTHROPY', 'POSSESSION', 'EXORCISM'].includes(s)) return 'Supernatural';
+          // ATHLETICS - Physical activities, sports
+          if (['CLIMBING', 'CLIMBER', 'SWIMMING', 'SWIMMER', 'THROW', 'THROWING', 'BALANCE', 'COORDINATION', 'ATHLETICS', 'FITNESS', 'RUNNING', 'JUMPING', 'ACROBATICS', 'TUMBLING', 'SPORT', 'COMPETITION', 'RACE', 'WRESTLING_SPORT', 'BOXING', 'MARTIAL_ARTS', 'FEAT_OF_STRENGTH', 'ENDURANCE'].includes(s)) return 'Athletics';
           
-          // MISCELLANEOUS - Anything that doesn't fit elsewhere
+          // AWARENESS - Senses, observation, situational awareness
+          if (['SITUATIONAL_AWARENESS', 'KINESIOLOGIC_AWARENESS', 'DIRECTION_SENSE', 'SENSES', 'SIGHT', 'HEARING', 'SMELL', 'TOUCH', 'TASTE', 'INTUITION', 'SIXTH_SENSE', 'PERCEPTION', 'DETECT', 'NOTICE', 'SPOT', 'LISTEN'].includes(s)) return 'Awareness';
+          
+          // INDUSTRY - Soap, lye, potash, ash, rendering
+          if (['SOAP_MAKING', 'LYE_MAKING', 'POTASH_MAKING', 'ASH_PRODUCTION', 'RENDER_FAT', 'POTASH', 'LYE', 'SOAP', 'RENDERING', 'ASH', 'FIRE_MAKING', 'TALLOW', 'FAT', 'OIL', 'LARD', 'GREASE'].includes(s)) return 'Industry';
+          
+          // MINING & REFINING - Mining specialties, ore processing
+          if (['MINING', 'PROSPECTING', 'ORE_PROCESSING', 'ORE_REFINING', 'ORE', 'COAL', 'GEM_MINING', 'METAL_MINING', 'SALT_MINING', 'QUARRY', 'EXCAVATION', 'TUNNELING', 'SHAFT_MINING', 'SURFACE_MINING'].includes(s)) return 'Mining & Refining';
+          
+          // TRADE & COMMERCE - Merchant, appraisal, valuation
+          if (['TRADE', 'TRADING', 'MERCHANT', 'BARGAINING', 'APPRAISAL', 'VALUE', 'PRICE', 'COMMERCE', 'BUSINESS', 'PROFIT', 'MARKET', 'SHOP', 'STORE', 'BUY', 'SELL', 'EXCHANGE', 'IMPORT', 'EXPORT', 'CURRENCY', 'MONEY', 'WEALTH', 'ECONOMY'].includes(s)) return 'Trade & Commerce';
+          
+          // LAW & ORDER - Judging, law, crime, punishment
+          if (['LAW', 'JUDGING', 'JUDGE', 'JUSTICE', 'COURT', 'TRIAL', 'CRIME', 'PUNISHMENT', 'PRISON', 'JAIL', 'EXECUTION', 'LAWYER', 'ATTORNEY', 'PROSECUTOR', 'DEFENDER', 'WITNESS', 'EVIDENCE', 'VERDICT', 'SENTENCE', 'LAW_ENFORCEMENT', 'GUARD', 'WATCH', 'SHERIFF', 'CONSTABLE'].includes(s)) return 'Law & Order';
+          
+          // THIEVERY - Stealing, pickpocket, lockpicking
+          if (['STEALING', 'PICKPOCKET', 'LOCKPICKING', 'BURGLARY', 'ROBBERY', 'THEFT', 'THIEF', 'ROGUE', 'BANDIT', 'CRIMINAL', 'SHOPLIFTING', 'CUTPURSE', 'FILCH', 'POACH', 'POACHING', 'SMUGGLE', 'SMUGGLING', 'CONTRABAND'].includes(s)) return 'Thievery';
+          
+          // STEALTH - Sneaking, hiding, disguise
+          if (['SNEAK', 'SNEAKING', 'STEALTH', 'HIDE', 'HIDING', 'CONCEAL', 'CONCEALMENT', 'CAMOUFLAGE', 'DISGUISE', 'MASK', 'SHADOW', 'SILENT', 'QUIET', 'UNSEEN', 'UNNOTICED'].includes(s)) return 'Stealth';
+          
+          // TRAPS & TRICKERY - Traps, mechanisms, ambush
+          if (['TRAP', 'TRAPS', 'TRAP_ENGINEERING', 'AMBUSH', 'AMBUSHING', 'SNARE', 'PIT_TRAP', 'SPIKE_TRAP', 'CAGE_TRAP', 'STONE_TRAP', 'WEAPON_TRAP', 'PRESSURE_PLATE', 'TRIPWIRE', 'Bait', 'LURE', 'DECOY', 'TRICK', 'DECEPTION', 'RUSE', 'FEINT'].includes(s)) return 'Traps & Trickery';
+          
+          // SURVIVAL - Foraging, camping, fire, primitive skills
+          if (['FORAGE', 'FORAGING', 'CAMPING', 'SHELTER', 'FIRE_BUILDING', 'SURVIVAL', 'WILDERNESS', 'NATURE', 'OUTDOOR', 'PRIMITIVE', 'BUSHCRAFT', 'SCAVENGE', 'SCAVENGING'].includes(s)) return 'Survival';
+          
+          // GATHERING - Plant gathering, wood collecting
+          if (['PLANT_GATHERING', 'HERB_GATHERING', 'GATHER', 'GATHERING', 'COLLECT', 'COLLECTING', 'HARVEST', 'HARVESTING', 'PICKING', 'FETCHING', 'WOOD_COLLECTION', 'BRANCH', 'TWIG', 'PLANT', 'BERRIES', 'FRUIT', 'NUTS', 'MUSHROOM', 'FUNGUS', 'ROOTS', 'HERBS'].includes(s)) return 'Gathering';
+          
+          // DISSECTION - All dissection skills
+          if (['DISSECT', 'DISSECTION', 'ANATOMY', 'VIVISECTION', 'AUTOPSY', 'EXAMINE', 'EXAMINATION', 'STUDY', 'ANALYZE', 'ANALYSIS', 'BUTCHER_ANATOMY', 'SURGERY_PRACTICE'].includes(s)) return 'Dissection';
+          
+          // VERMIN & PESTS - Vermin handling, pest control
+          if (['VERMIN', 'RAT', 'MOUSE', 'HAMSTER', 'RABBIT', 'BIRD_SMALL', 'FISH_SMALL', 'INSECT', 'BUG', 'Pest', 'PEST_CONTROL', 'EXTERMINATE', 'TRAP_VERMIN', 'HUNT_VERMIN', 'CATCH_VERMIN'].includes(s)) return 'Vermin Handling';
+          
+          // LABOR - Hauling, cleaning, generic labor
+          if (['HAULING', 'HAUL', 'CARRY', 'CARRYING', 'TRANSPORT', 'MOVING', 'LIFTING', 'PUSH', 'PULL', 'DRAG', 'CLEANING', 'CLEAN', 'SWEEP', 'MOP', 'WASH', 'POLISH', 'MAINTENANCE', 'LABOR', 'WORK', 'TASK', 'CHORE', 'JOB', 'DUTY', 'SERVICE', 'PEASANT', 'SERF', 'SERVANT'].includes(s)) return 'Labor';
+          
+          // ECONOMIC - Economy, finance, banking
+          if (['ECONOMY', 'FINANCE', 'BANKING', 'INVESTMENT', 'LOAN', 'DEBT', 'CREDIT', 'INTEREST', 'TAX', 'TAXATION', 'REVENUE', 'BUDGET', 'ACCOUNTING', 'BOOKKEEPING'].includes(s)) return 'Economic';
+          
+          // RELIGION - Worship, prayer, divine
+          if (['WORSHIP', 'PRAYER', 'DIVINE', 'RELIGION', 'FAITH', 'BELIEF', 'CLERIC', 'PRIEST', 'PRIESTESS', 'ACOLYTE', 'MONK', 'NUN', 'TEMPLE', 'SHRINE', 'CHURCH', 'CATHEDRAL', 'RITUAL', 'CEREMONY', 'SACRAMENT', 'BLESSING', 'CURSE', 'DIVINATION', 'PROPHECY', 'OMEN', 'VISION', 'REVELATION', 'COMMUNE', 'SPIRIT', 'SOUL', 'AFTERLIFE', 'HELL', 'HEAVEN', 'UNDERWORLD'].includes(s)) return 'Religion';
+          
+          // MAGIC - Arcane, spells, magical arts
+          if (['MAGIC', 'SPELL', 'ARCANE', 'SORCERY', 'WIZARDRY', 'WITCHCRAFT', 'WIZARD', 'SORCERER', 'WITCH', 'MAGE', 'MAGUS', 'ENCHANTER', 'ENCHANTMENT', 'CHARM', 'SPELLCASTING', 'MANA', 'MAGICAL', 'SUPERNATURAL', 'NECROMANCY', 'ELEMENTAL', 'SUMMONING', 'CONJURATION', 'ILLUSION', 'TRANSMUTATION', 'ABJURATION', 'DIVINATION_MAGIC', 'ENCHANTMENT_MAGIC', 'EVOCATION', 'NECROMANTIC'].includes(s)) return 'Magic';
+          
+          // NATURE & DRUIDISM - Nature connection, druidic arts
+          if (['DRUID', 'DRUIDISM', 'NATURE', 'NATURAL', 'EARTH', 'WATER', 'FIRE', 'AIR', 'PLANT', 'ANIMAL', 'WEATHER', 'SEASON', 'MOON', 'SUN', 'STARS', 'COSMOS', 'HARMONY', 'BALANCE', 'CIRCLE', 'STONE_CIRCLE', 'SACRED_GROVE'].includes(s)) return 'Nature & Druidism';
+          
+          // MENTAL - Willpower, focus, mental discipline
+          if (['WILLPOWER', 'FOCUS', 'CONCENTRATION', 'DISCIPLINE', 'MEDITATION', 'MIND', 'MENTAL', 'PSYCHIC', 'TELEPATHY', 'TELEKINESIS', 'CLAIRVOYANCE', 'PRECOGNITION', 'ASTRAL', 'MEDITATE', 'ZEN', 'TRANCE', 'ALTERED_STATE'].includes(s)) return 'Mental Discipline';
+          
+          // MEMORY & KNOWLEDGE - Memory, recall, learning
+          if (['MEMORY', 'RECALL', 'REMEMBER', 'MEMORIZE', 'LEARNING', 'STUDY', 'KNOWLEDGE_ACQUISITION', 'EDUCATION', 'TRAINING', 'PRACTICE', 'REPETITION', 'DRILL', 'EXERCISE', 'SKILL_GAIN', 'IMPROVEMENT', 'MASTERY', 'EXPERTISE', 'PROFICIENCY', 'COMPETENCE', 'APTITUDE', 'TALENT', 'GIFT', 'KNACK'].includes(s)) return 'Memory & Learning';
+          
+          // PATIENCE & TEMPERAMENT - Patience, calm, emotional control
+          if (['PATIENCE', 'CALM', 'COMPOSURE', 'TEMPERAMENT', 'EMOTION', 'FEELING', 'MOOD', 'TEMPER', 'SELF_CONTROL', 'RESTRAINT', 'MODERATION', 'EQUANIMITY', 'SERENITY', 'TRANQUILITY', 'PEACE', 'HARMONY_INNER', 'BALANCE_INNER', 'CENTERED', 'GROUNDED'].includes(s)) return 'Patience & Temperament';
+          
+          // MISCELLANEOUS - Last resort catch-all
           return 'Miscellaneous';
         };
         
@@ -370,7 +486,7 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         });
         
         // Sort categories and skills within each category
-        const categoryOrder = ['Warfare', 'Metalworking', 'Craftsmanship', 'Construction', 'Healing', 'Agriculture', 'Animal Arts', 'Woodsmanship', 'Fishing', 'Commerce', 'Social Arts', 'Scholarship', 'Records & Lore', 'Performance', 'Athletics', 'Industry', 'Service', 'Survival', 'Subterfuge', 'Mental Discipline', 'Supernatural', 'Miscellaneous'];
+        const categoryOrder = ['Warfare', 'Metalworking', 'Gem Working', 'Stoneworking', 'Woodworking', 'Fiber & Leather', 'Pottery & Glass', 'Organic Crafts', 'Construction', 'Engineering', 'Healing', 'Agriculture', 'Food Preparation', 'Animal Care', 'Animal Products', 'Hunting & Trapping', 'Fishing', 'Riding', 'Vehicle Operation', 'Leadership', 'Social Arts', 'Scholarship', 'Teaching & Education', 'Writing & Records', 'Literature', 'Speech', 'Music', 'Dance', 'Comedy', 'Athletics', 'Awareness', 'Industry', 'Mining & Refining', 'Trade & Commerce', 'Law & Order', 'Thievery', 'Stealth', 'Traps & Trickery', 'Survival', 'Gathering', 'Dissection', 'Vermin Handling', 'Labor', 'Economic', 'Religion', 'Magic', 'Nature & Druidism', 'Mental Discipline', 'Memory & Learning', 'Patience & Temperament', 'Miscellaneous'];
         
         const groupedSkills = Array.from(categoryMap.entries())
           .map(([category, skills]) => ({
