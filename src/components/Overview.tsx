@@ -79,137 +79,80 @@ interface GuildHallProps {
   skillsData: { category: string; bestMaster: { name: string; totalIp: number } | null; skills: { skill: string; count: number; topFigures: { name: string; skillLevel: number }[] }[] }[];
 }
 
-// Artifacts Card Component
+// Artifacts Card Component - Simplified version showing just counts
 const ArtifactsCard = () => {
   const [artifactStats, setArtifactStats] = useState<{
     total: number;
-    moodCreations: number;
-    heroicRelics: { name: string; beastName: string }[];
-    holyArtifacts: { name: string; religion: string }[];
-    writtenWorks: { name: string; title: string; type: string }[];
-    lostTreasures: number;
+    created: number;
+    heroic: number;
+    holy: number;
+    written: number;
+    lost: number;
   } | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadArtifacts = async () => {
       try {
         const allArtifacts = await db.artifacts.toArray();
         
-        // Debug: log first few artifacts to see structure
+        // Log raw data for debugging
+        console.log(`Loaded ${allArtifacts.length} artifacts`);
         if (allArtifacts.length > 0) {
-          console.log('Sample artifacts:', allArtifacts.slice(0, 3));
+          console.log('First artifact:', allArtifacts[0]);
         }
         
-        // Categorize artifacts - be more permissive since XML flags may not be set
+        // Simple categorization based on available data
+        // Most artifacts in DF are "created" - they have a creator_hf_id
+        const created = allArtifacts.filter(a => a.creatorHfid && a.creatorHfid !== -1).length;
         
-        // "Artifacts Created" = any artifact with a creator (most artifacts)
-        const moodCreations = allArtifacts.filter(a => 
-          a.creatorHfid && a.creatorHfid !== -1
-        );
+        // Heroic = explicitly named after slaying OR name suggests it
+        const heroic = allArtifacts.filter(a => {
+          if (a.isNamedAfterSlaying) return true;
+          const name = a.name?.toLowerCase() || '';
+          return name.includes('slay') || name.includes('killer') || name.includes('bane');
+        }).length;
         
-        // Heroic Relics = named after slaying (use flag OR check name patterns as fallback)
-        const heroicRelics = allArtifacts
-          .filter(a => {
-            // Use explicit flag if available
-            if (a.isNamedAfterSlaying && a.slainBeastName) return true;
-            // Fallback: check if name contains patterns like "the [creature]"
-            const name = a.name?.toLowerCase() || '';
-            return name.includes('the ') && (
-              name.includes('slaying') || 
-              name.includes('killer') || 
-              name.includes('bane') ||
-              name.includes('slayer')
-            );
-          })
-          .slice(0, 5)
-          .map(a => ({
-            name: a.name,
-            beastName: a.slainBeastName || 'a legendary beast'
-          }));
+        // Holy = explicitly marked as relic OR held by entity (temple/religion)
+        const holy = allArtifacts.filter(a => {
+          if (a.isRelic) return true;
+          return a.entityId && a.entityId !== -1;
+        }).length;
         
-        // Holy Artifacts = relics (use flag OR check item type patterns)
-        const holyArtifacts = allArtifacts
-          .filter(a => {
-            if (a.isRelic) return true;
-            // Fallback: check if held by an entity (likely a temple/religious site)
-            return a.entityId && a.entityId !== -1 && !a.holderHfid;
-          })
-          .slice(0, 5)
-          .map(a => ({
-            name: a.name,
-            religion: a.entityId ? `Entity ${a.entityId}` : 'Unknown Religion'
-          }));
+        // Written = books, scrolls, slabs, etc.
+        const written = allArtifacts.filter(a => {
+          if (a.isWrittenContent) return true;
+          const type = `${a.itemType || ''} ${a.itemSubtype || ''}`.toLowerCase();
+          return type.includes('book') || type.includes('scroll') || type.includes('slab') || 
+                 type.includes('codex') || type.includes('page');
+        }).length;
         
-        // Written Works = books, slabs, scrolls, etc.
-        const writtenWorks = allArtifacts
-          .filter(a => {
-            if (a.isWrittenContent) return true;
-            // Fallback: check item type
-            const itemType = a.itemType?.toLowerCase() || '';
-            const subType = a.itemSubtype?.toLowerCase() || '';
-            return itemType.includes('book') || 
-                   itemType.includes('scroll') || 
-                   itemType.includes('slab') ||
-                   itemType.includes('codex') ||
-                   itemType.includes('page') ||
-                   subType.includes('book') ||
-                   subType.includes('scroll');
-          })
-          .slice(0, 5)
-          .map(a => ({
-            name: a.name,
-            title: a.writtenContentTitle || a.name,
-            type: a.writtenContentType || a.itemSubtype || a.itemType || 'Written Work'
-          }));
-        
-        // Lost treasures: artifacts with no current holder or site
-        const lostTreasures = allArtifacts.filter(a => 
+        // Lost = no current location
+        const lost = allArtifacts.filter(a => 
           (!a.holderHfid || a.holderHfid === -1) && 
           (!a.siteId || a.siteId === -1) &&
           (!a.entityId || a.entityId === -1)
-        );
+        ).length;
         
         setArtifactStats({
           total: allArtifacts.length,
-          moodCreations: moodCreations.length,
-          heroicRelics,
-          holyArtifacts,
-          writtenWorks,
-          lostTreasures: lostTreasures.length
+          created,
+          heroic,
+          holy,
+          written,
+          lost
         });
         
-        console.log('Artifact stats:', {
-          total: allArtifacts.length,
-          moodCreations: moodCreations.length,
-          heroicRelics: heroicRelics.length,
-          holyArtifacts: holyArtifacts.length,
-          writtenWorks: writtenWorks.length,
-          lostTreasures: lostTreasures.length
-        });
+        console.log('Artifact counts:', { total: allArtifacts.length, created, heroic, holy, written, lost });
       } catch (err) {
         console.error('Error loading artifacts:', err);
-      } finally {
-        setLoading(false);
       }
     };
     
     loadArtifacts();
   }, []);
 
-  if (loading || !artifactStats) {
-    return (
-      <section className="artifacts-section">
-        <div className="artifacts-header">
-          <h2 className="artifacts-title">🏺 Artifacts</h2>
-        </div>
-        <div className="artifacts-loading">Loading artifacts...</div>
-      </section>
-    );
-  }
-
-  if (artifactStats.total === 0) {
-    return null; // Don't show if no artifacts
+  if (!artifactStats || artifactStats.total === 0) {
+    return null;
   }
 
   return (
@@ -219,85 +162,35 @@ const ArtifactsCard = () => {
         <p className="artifacts-subtitle">{artifactStats.total.toLocaleString()} Legendary Items</p>
       </div>
       
-      <div className="artifact-categories">
-        {/* Artifacts Created */}
-        <div className="artifact-category-card">
-          <div className="artifact-category-header">
-            <span className="artifact-icon">🎨</span>
-            <h3>Artifacts Created</h3>
-            <span className="artifact-count">{artifactStats.moodCreations.toLocaleString()}</span>
-          </div>
-          <p className="artifact-description">Masterworks forged in the grip of madness</p>
+      <div className="artifact-categories-simple">
+        <div className="artifact-stat-card">
+          <span className="artifact-stat-icon">🎨</span>
+          <span className="artifact-stat-value">{artifactStats.created}</span>
+          <span className="artifact-stat-label">Created</span>
         </div>
-
-        {/* Heroic Relics */}
-        <div className="artifact-category-card">
-          <div className="artifact-category-header">
-            <span className="artifact-icon">⚔️</span>
-            <h3>Heroic Relics</h3>
-            <span className="artifact-count">{artifactStats.heroicRelics.length}+</span>
-          </div>
-          <div className="artifact-list">
-            {artifactStats.heroicRelics.slice(0, 3).map((relic, idx) => (
-              <div key={idx} className="artifact-item">
-                <span className="artifact-name">{relic.name}</span>
-                <span className="artifact-detail">Named after slaying {relic.beastName}</span>
-              </div>
-            ))}
-            {artifactStats.heroicRelics.length === 0 && (
-              <span className="artifact-empty">No legendary slaying named artifacts</span>
-            )}
-          </div>
+        
+        <div className="artifact-stat-card">
+          <span className="artifact-stat-icon">⚔️</span>
+          <span className="artifact-stat-value">{artifactStats.heroic}</span>
+          <span className="artifact-stat-label">Heroic Relics</span>
         </div>
-
-        {/* Holy Artifacts */}
-        <div className="artifact-category-card">
-          <div className="artifact-category-header">
-            <span className="artifact-icon">✨</span>
-            <h3>Holy Artifacts</h3>
-            <span className="artifact-count">{artifactStats.holyArtifacts.length}+</span>
-          </div>
-          <div className="artifact-list">
-            {artifactStats.holyArtifacts.slice(0, 3).map((artifact, idx) => (
-              <div key={idx} className="artifact-item">
-                <span className="artifact-name">{artifact.name}</span>
-                <span className="artifact-detail">Venerated by {artifact.religion}</span>
-              </div>
-            ))}
-            {artifactStats.holyArtifacts.length === 0 && (
-              <span className="artifact-empty">No relics found</span>
-            )}
-          </div>
+        
+        <div className="artifact-stat-card">
+          <span className="artifact-stat-icon">✨</span>
+          <span className="artifact-stat-value">{artifactStats.holy}</span>
+          <span className="artifact-stat-label">Holy Artifacts</span>
         </div>
-
-        {/* Written Works */}
-        <div className="artifact-category-card">
-          <div className="artifact-category-header">
-            <span className="artifact-icon">📜</span>
-            <h3>Written Works</h3>
-            <span className="artifact-count">{artifactStats.writtenWorks.length}+</span>
-          </div>
-          <div className="artifact-list">
-            {artifactStats.writtenWorks.slice(0, 3).map((work, idx) => (
-              <div key={idx} className="artifact-item">
-                <span className="artifact-name">{work.title}</span>
-                <span className="artifact-detail">{work.type}</span>
-              </div>
-            ))}
-            {artifactStats.writtenWorks.length === 0 && (
-              <span className="artifact-empty">No written works found</span>
-            )}
-          </div>
+        
+        <div className="artifact-stat-card">
+          <span className="artifact-stat-icon">📜</span>
+          <span className="artifact-stat-value">{artifactStats.written}</span>
+          <span className="artifact-stat-label">Written Works</span>
         </div>
-
-        {/* Lost Treasures */}
-        <div className="artifact-category-card">
-          <div className="artifact-category-header">
-            <span className="artifact-icon">❓</span>
-            <h3>Lost Treasures</h3>
-            <span className="artifact-count">{artifactStats.lostTreasures.toLocaleString()}</span>
-          </div>
-          <p className="artifact-description">Items with unknown whereabouts</p>
+        
+        <div className="artifact-stat-card">
+          <span className="artifact-stat-icon">❓</span>
+          <span className="artifact-stat-value">{artifactStats.lost}</span>
+          <span className="artifact-stat-label">Lost Treasures</span>
         </div>
       </div>
     </section>

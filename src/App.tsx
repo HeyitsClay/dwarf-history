@@ -44,11 +44,30 @@ function App() {
     };
 
     const renderContent = () => {
-      if (view.type === 'parsing' || isParsing || isClearing) {
+      if (view.type === 'parsing' || isParsing) {
         return (
-          <div className="parsing-screen">
-            <h2>{isClearing ? 'Clearing World Data...' : 'Processing Legends File...'}</h2>
-            <p>{isClearing ? 'Please wait while we clear the current world.' : 'This may take a moment for large worlds.'}</p>
+          <div className="upload-container">
+            <div className="dropzone">
+              <div className="dropzone-content">
+                <div className="dropzone-icon">⚙️</div>
+                <p className="dropzone-text">Processing Legends File...</p>
+                <p className="dropzone-hint">This may take a moment for large worlds.</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      
+      if (isClearing) {
+        return (
+          <div className="upload-container">
+            <div className="dropzone">
+              <div className="dropzone-content">
+                <div className="dropzone-icon">🗑️</div>
+                <p className="dropzone-text">Clearing World Data...</p>
+                <p className="dropzone-hint">Please wait while we clear the current world.</p>
+              </div>
+            </div>
           </div>
         );
       }

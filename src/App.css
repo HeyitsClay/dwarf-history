@@ -1213,18 +1213,18 @@ html, body, #root {
   }
 }
 
-/* Artifacts Section */
+/* Artifacts Section - Simplified */
 .artifacts-section {
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
 }
 
 .artifacts-header {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .artifacts-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   color: var(--accent);
   margin-bottom: 0.25rem;
   letter-spacing: 2px;
@@ -1237,108 +1237,71 @@ html, body, #root {
   letter-spacing: 3px;
 }
 
-.artifacts-loading {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 2rem;
+/* Simple stat cards layout */
+.artifact-categories-simple {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0 1rem;
 }
 
-.artifact-categories {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
-}
-
-.artifact-category-card {
+.artifact-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+  padding: 1rem 1.25rem;
   background: var(--bg-card);
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  padding: 1.25rem;
-  transition: all 0.2s;
+  border: 1px solid var(--border);
+  border-radius: 10px;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
-.artifact-category-card:hover {
+.artifact-stat-card:hover {
   border-color: var(--accent);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.artifact-category-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.artifact-icon {
+.artifact-stat-icon {
   font-size: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
-.artifact-category-header h3 {
-  flex: 1;
-  font-size: 1rem;
-  color: var(--text);
+.artifact-stat-value {
+  font-size: 1.5rem;
   font-weight: 600;
-}
-
-.artifact-count {
-  background: var(--bg);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  color: var(--accent);
-  font-weight: 600;
-  border: 1px solid var(--border);
-}
-
-.artifact-description {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  line-height: 1.5;
-}
-
-.artifact-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.artifact-item {
-  display: flex;
-  flex-direction: column;
-  padding: 0.5rem;
-  background: var(--bg);
-  border-radius: 6px;
-  border-left: 3px solid var(--accent);
-}
-
-.artifact-name {
-  font-size: 0.9rem;
   color: var(--text);
-  font-weight: 500;
-  margin-bottom: 0.25rem;
+  line-height: 1;
 }
 
-.artifact-detail {
-  font-size: 0.75rem;
+.artifact-stat-label {
+  font-size: 0.7rem;
   color: var(--text-muted);
-}
-
-.artifact-empty {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  font-style: italic;
-  padding: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 0.25rem;
 }
 
 /* Responsive for artifacts */
-@media (max-width: 768px) {
-  .artifact-categories {
-    grid-template-columns: 1fr;
+@media (max-width: 600px) {
+  .artifact-categories-simple {
+    gap: 0.5rem;
   }
   
-  .artifacts-title {
+  .artifact-stat-card {
+    min-width: 80px;
+    padding: 0.75rem 1rem;
+  }
+  
+  .artifact-stat-value {
     font-size: 1.25rem;
+  }
+  
+  .artifact-stat-label {
+    font-size: 0.65rem;
   }
 }
