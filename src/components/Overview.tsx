@@ -96,35 +96,71 @@ const ArtifactsCard = () => {
       try {
         const allArtifacts = await db.artifacts.toArray();
         
-        // Categorize artifacts
+        // Debug: log first few artifacts to see structure
+        if (allArtifacts.length > 0) {
+          console.log('Sample artifacts:', allArtifacts.slice(0, 3));
+        }
+        
+        // Categorize artifacts - be more permissive since XML flags may not be set
+        
+        // "Artifacts Created" = any artifact with a creator (most artifacts)
         const moodCreations = allArtifacts.filter(a => 
-          // Strange mood creations: created by a historical figure but not named after slaying
-          a.creatorHfid && a.creatorHfid !== -1 && !a.isNamedAfterSlaying && !a.isRelic && !a.isWrittenContent
+          a.creatorHfid && a.creatorHfid !== -1
         );
         
+        // Heroic Relics = named after slaying (use flag OR check name patterns as fallback)
         const heroicRelics = allArtifacts
-          .filter(a => a.isNamedAfterSlaying && a.slainBeastName)
+          .filter(a => {
+            // Use explicit flag if available
+            if (a.isNamedAfterSlaying && a.slainBeastName) return true;
+            // Fallback: check if name contains patterns like "the [creature]"
+            const name = a.name?.toLowerCase() || '';
+            return name.includes('the ') && (
+              name.includes('slaying') || 
+              name.includes('killer') || 
+              name.includes('bane') ||
+              name.includes('slayer')
+            );
+          })
           .slice(0, 5)
           .map(a => ({
             name: a.name,
-            beastName: a.slainBeastName || 'Unknown Beast'
+            beastName: a.slainBeastName || 'a legendary beast'
           }));
         
+        // Holy Artifacts = relics (use flag OR check item type patterns)
         const holyArtifacts = allArtifacts
-          .filter(a => a.isRelic)
+          .filter(a => {
+            if (a.isRelic) return true;
+            // Fallback: check if held by an entity (likely a temple/religious site)
+            return a.entityId && a.entityId !== -1 && !a.holderHfid;
+          })
           .slice(0, 5)
           .map(a => ({
             name: a.name,
             religion: a.entityId ? `Entity ${a.entityId}` : 'Unknown Religion'
           }));
         
+        // Written Works = books, slabs, scrolls, etc.
         const writtenWorks = allArtifacts
-          .filter(a => a.isWrittenContent)
+          .filter(a => {
+            if (a.isWrittenContent) return true;
+            // Fallback: check item type
+            const itemType = a.itemType?.toLowerCase() || '';
+            const subType = a.itemSubtype?.toLowerCase() || '';
+            return itemType.includes('book') || 
+                   itemType.includes('scroll') || 
+                   itemType.includes('slab') ||
+                   itemType.includes('codex') ||
+                   itemType.includes('page') ||
+                   subType.includes('book') ||
+                   subType.includes('scroll');
+          })
           .slice(0, 5)
           .map(a => ({
             name: a.name,
-            title: a.writtenContentTitle || 'Untitled',
-            type: a.writtenContentType || 'Unknown'
+            title: a.writtenContentTitle || a.name,
+            type: a.writtenContentType || a.itemSubtype || a.itemType || 'Written Work'
           }));
         
         // Lost treasures: artifacts with no current holder or site
@@ -140,6 +176,15 @@ const ArtifactsCard = () => {
           heroicRelics,
           holyArtifacts,
           writtenWorks,
+          lostTreasures: lostTreasures.length
+        });
+        
+        console.log('Artifact stats:', {
+          total: allArtifacts.length,
+          moodCreations: moodCreations.length,
+          heroicRelics: heroicRelics.length,
+          holyArtifacts: holyArtifacts.length,
+          writtenWorks: writtenWorks.length,
           lostTreasures: lostTreasures.length
         });
       } catch (err) {

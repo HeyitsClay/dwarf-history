@@ -12,6 +12,7 @@ function App() {
     const { hasData, metadata, loading, clearWorld, refreshData } = useWorldData();
     const { warning, checked } = useStorageGuard();
     const [isParsing, setIsParsing] = useState(false);
+    const [isClearing, setIsClearing] = useState(false);
     
     console.log('App: Hooks loaded, view type:', view.type);
 
@@ -33,17 +34,21 @@ function App() {
 
     const handleClearWorld = async () => {
       if (confirm('Are you sure you want to clear all world data and load a new world?')) {
+        setIsClearing(true);
+        // Small delay to let UI update
+        await new Promise(r => setTimeout(r, 100));
         await clearWorld();
         navigateToUpload();
+        setIsClearing(false);
       }
     };
 
     const renderContent = () => {
-      if (view.type === 'parsing' || isParsing) {
+      if (view.type === 'parsing' || isParsing || isClearing) {
         return (
           <div className="parsing-screen">
-            <h2>Processing Legends File...</h2>
-            <p>This may take a moment for large worlds.</p>
+            <h2>{isClearing ? 'Clearing World Data...' : 'Processing Legends File...'}</h2>
+            <p>{isClearing ? 'Please wait while we clear the current world.' : 'This may take a moment for large worlds.'}</p>
           </div>
         );
       }
@@ -85,8 +90,13 @@ function App() {
         )}
           <div className="header-actions">
             {hasData && (
-              <button className="btn-header" onClick={handleClearWorld} title="Load new world">
-                📜 New World
+              <button 
+                className="btn-header" 
+                onClick={handleClearWorld} 
+                title="Load new world"
+                disabled={isClearing}
+              >
+                {isClearing ? '⏳ Clearing...' : '📜 New World'}
               </button>
             )}
           </div>
