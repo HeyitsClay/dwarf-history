@@ -95,32 +95,23 @@ const ArtifactsCard = () => {
       try {
         const allArtifacts = await db.artifacts.toArray();
         
+        // Check if data needs re-upload (names missing = old corrupted data)
+        const hasCorruptedData = allArtifacts.length > 0 && !allArtifacts[0].name;
+        
         // Log raw data for debugging
         console.log(`Loaded ${allArtifacts.length} artifacts`);
         if (allArtifacts.length > 0) {
-          console.log('First 3 artifacts:');
-          allArtifacts.slice(0, 3).forEach((a, i) => {
-            console.log(`Artifact ${i}:`, {
-              id: a.id,
-              name: a.name,
-              itemType: a.itemType,
-              itemSubtype: a.itemSubtype,
-              creatorHfid: a.creatorHfid,
-              isRelic: a.isRelic,
-              isNamedAfterSlaying: a.isNamedAfterSlaying,
-              isWrittenContent: a.isWrittenContent,
-              holderHfid: a.holderHfid,
-              siteId: a.siteId,
-              entityId: a.entityId
-            });
-          });
+          console.log('First artifact:', allArtifacts[0]);
+        }
+        
+        if (hasCorruptedData) {
+          console.warn('Artifact data is corrupted - needs re-upload');
         }
         
         // Debug: Count artifacts with various properties
         const withCreator = allArtifacts.filter(a => a.creatorHfid && a.creatorHfid > 0).length;
-        const withCreatorUndefined = allArtifacts.filter(a => a.creatorHfid === undefined).length;
-        const withCreatorNegative = allArtifacts.filter(a => a.creatorHfid === -1).length;
-        console.log('Creator analysis:', { withCreator, withCreatorUndefined, withCreatorNegative });
+        const withName = allArtifacts.filter(a => a.name && a.name.length > 0).length;
+        console.log('Artifact field analysis:', { withCreator, withName, hasCorruptedData });
         
         // Categorize artifacts
         // "Created" = any artifact with a valid creator_hf_id (> 0, not -1, not undefined)
@@ -154,16 +145,19 @@ const ArtifactsCard = () => {
           (!a.entityId || a.entityId <= 0)
         ).length;
         
+        // If data is corrupted (no names), show warning in stats
+        const displayCreated = hasCorruptedData ? -1 : created;
+        
         setArtifactStats({
           total: allArtifacts.length,
-          created,
+          created: displayCreated,
           heroic,
           holy,
           written,
           lost
         });
         
-        console.log('Artifact counts:', { total: allArtifacts.length, created, heroic, holy, written, lost });
+        console.log('Artifact counts:', { total: allArtifacts.length, created, heroic, holy, written, lost, hasCorruptedData });
       } catch (err) {
         console.error('Error loading artifacts:', err);
       }
@@ -175,12 +169,20 @@ const ArtifactsCard = () => {
   if (!artifactStats || artifactStats.total === 0) {
     return null;
   }
+  
+  // Check if showing corrupted data warning
+  const needsReupload = artifactStats.created === -1;
 
   return (
     <section className="artifacts-section">
       <div className="artifacts-header">
         <h2 className="artifacts-title">🏺 Artifacts</h2>
         <p className="artifacts-subtitle">{artifactStats.total.toLocaleString()} Legendary Items</p>
+        {needsReupload && (
+          <p className="artifacts-warning" style={{ color: '#e76f51', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+            ⚠️ Data needs re-upload - Click "New World" to reload your file
+          </p>
+        )}
       </div>
       
       <div className="artifact-categories-simple">

@@ -596,6 +596,17 @@ class SimpleXmlParser {
   }
 
   finalize(): { figures: HistoricalFigure[]; events: HistoricalEvent[]; sites: Site[]; entities: Entity[]; artifacts: Artifact[] } {
+    // Debug: log first few artifacts to verify parsing
+    console.log(`Parser finalized: ${this.artifacts.length} artifacts`);
+    if (this.artifacts.length > 0) {
+      console.log('First artifact parsed:', {
+        id: this.artifacts[0].id,
+        name: this.artifacts[0].name,
+        itemType: this.artifacts[0].itemType,
+        creatorHfid: this.artifacts[0].creatorHfid
+      });
+    }
+    
     return {
       figures: this.figures,
       events: this.events,
