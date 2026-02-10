@@ -35,6 +35,134 @@ const getCategoryBestTitle = (category: string): string => {
   return titles[category] || 'Master';
 };
 
+// School groupings for Guild Hall
+const SCHOOLS = [
+  {
+    id: 'martial',
+    name: 'Martial Academy',
+    icon: '⚔️',
+    color: '#e76f51',
+    categories: ['Combat', 'Weaponry', 'Siegecraft', 'Command']
+  },
+  {
+    id: 'crafts',
+    name: 'Craftsman\'s Guild',
+    icon: '🔨',
+    color: '#d4a373',
+    categories: ['Smithing', 'Stoneworking', 'Woodworking', 'Textile Arts', 'Crafting', 'Engineering']
+  },
+  {
+    id: 'life',
+    name: 'Life Circle',
+    icon: '🌿',
+    color: '#2a9d8f',
+    categories: ['Medicine', 'Agriculture', 'Foodcraft', 'Animal Handling']
+  },
+  {
+    id: 'mind',
+    name: 'Mind Society',
+    icon: '📚',
+    color: '#9b5de5',
+    categories: ['Social Arts', 'Scholarship', 'Performance']
+  },
+  {
+    id: 'physical',
+    name: 'Way of the Body',
+    icon: '💪',
+    color: '#f4a261',
+    categories: ['Athletics', 'Survival', 'Industry']
+  }
+];
+
+// Guild Hall Component
+interface GuildHallProps {
+  skillsData: { category: string; bestMaster: { name: string; totalIp: number } | null; skills: { skill: string; count: number; topFigures: { name: string; skillLevel: number }[] }[] }[];
+}
+
+const GuildHall = ({ skillsData }: GuildHallProps) => {
+  const [activeSchool, setActiveSchool] = useState('martial');
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+
+  const activeSchoolData = SCHOOLS.find(s => s.id === activeSchool);
+  const schoolCategories = skillsData.filter(d => activeSchoolData?.categories.includes(d.category));
+
+  return (
+    <section className="guild-hall">
+      <div className="guild-header">
+        <h2 className="guild-title">🏛️ Guild Hall</h2>
+        <p className="guild-subtitle">Five Schools of Mastery</p>
+      </div>
+
+      {/* School Tabs */}
+      <div className="school-tabs">
+        {SCHOOLS.map(school => (
+          <button
+            key={school.id}
+            className={`school-tab ${activeSchool === school.id ? 'active' : ''}`}
+            onClick={() => { setActiveSchool(school.id); setExpandedCategory(null); }}
+            style={{ '--school-color': school.color } as React.CSSProperties}
+          >
+            <span className="school-icon">{school.icon}</span>
+            <span className="school-name">{school.name}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* School Content */}
+      <div className="school-content" style={{ '--school-color': activeSchoolData?.color } as React.CSSProperties}>
+        <div className="category-cards">
+          {schoolCategories.map(categoryData => {
+            const totalPractitioners = categoryData.skills.reduce((sum, s) => sum + s.count, 0);
+            const isExpanded = expandedCategory === categoryData.category;
+
+            return (
+              <div
+                key={categoryData.category}
+                className={`category-card ${isExpanded ? 'expanded' : ''}`}
+                onClick={() => setExpandedCategory(isExpanded ? null : categoryData.category)}
+              >
+                <div className="card-header">
+                  <h3 className="card-title">{categoryData.category}</h3>
+                  <span className="card-count">{totalPractitioners.toLocaleString()} practitioners</span>
+                </div>
+
+                {categoryData.bestMaster && (
+                  <div className="card-champion">
+                    <div className="champion-crown">👑</div>
+                    <div className="champion-info">
+                      <span className="champion-title">{getCategoryBestTitle(categoryData.category)}</span>
+                      <span className="champion-name">{categoryData.bestMaster.name}</span>
+                    </div>
+                    <div className="champion-level">
+                      Lv.{Math.floor(categoryData.bestMaster.totalIp / 100)}
+                    </div>
+                  </div>
+                )}
+
+                {isExpanded && (
+                  <div className="card-skills">
+                    {categoryData.skills.slice(0, 5).map((skill, idx) => (
+                      <div key={idx} className="skill-row">
+                        <span className="skill-name">{skill.skill.replace(/_/g, ' ').toLowerCase()}</span>
+                        <span className="skill-practitioners">{skill.count}</span>
+                      </div>
+                    ))}
+                    {categoryData.skills.length > 5 && (
+                      <div className="skill-more">+{categoryData.skills.length - 5} more skills</div>
+                    )}
+                  </div>
+                )}
+
+                {!isExpanded && <div className="card-hint">Click to expand</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 export const Overview = ({ onNewWorld }: OverviewProps) => {
   const [year, setYear] = useState<number>(0);
   const [livingCount, setLivingCount] = useState(0);
@@ -719,52 +847,9 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         )}
       </section>
 
-      {/* Wide Card - Skills by Category */}
+      {/* Guild Hall - Professions & Masters */}
       {skillsData.length > 0 && (
-        <section className="skills-section">
-          <div className="skills-card">
-            <div className="skills-header">
-              <span className="skills-icon">📜</span>
-              <span className="skills-title">Professions & Masters</span>
-            </div>
-            {skillsData.map((categoryData, cidx) => (
-              <div key={cidx} className="skill-category">
-                <div className="skill-category-header">
-                  <h4 className="skill-category-title">{categoryData.category}</h4>
-                  {categoryData.bestMaster && (
-                    <div className="category-best-master">
-                      <span className="best-master-crown">👑</span>
-                      <div className="best-master-info">
-                        <span className="best-master-title">{getCategoryBestTitle(categoryData.category)}</span>
-                        <span className="best-master-name">{categoryData.bestMaster.name}</span>
-                      </div>
-                      <span className="best-master-level">{Math.floor(categoryData.bestMaster.totalIp / 100)}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="skills-grid">
-                  {categoryData.skills.map((skillData, sidx) => (
-                    <div key={sidx} className="skill-column">
-                      <div className="skill-header">
-                        <div className="skill-name">{skillData.skill.replace(/_/g, ' ').toLowerCase()}</div>
-                        <div className="skill-count">{skillData.count.toLocaleString()} practitioners</div>
-                      </div>
-                      <div className="skill-masters">
-                        {skillData.topFigures.map((fig, fidx) => (
-                          <div key={fidx} className="skill-master">
-                            <span className="master-rank">#{fidx + 1}</span>
-                            <span className="master-name">{fig.name}</span>
-                            <span className="master-level">Lv.{fig.skillLevel}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        <GuildHall skillsData={skillsData} />
       )}
 
       {/* Action */}

@@ -928,6 +928,270 @@ html, body, #root {
   font-size: 0.65rem;
 }
 
+/* ===== GUILD HALL - New Design ===== */
+.guild-hall {
+  margin-bottom: 2.5rem;
+}
+
+.guild-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.guild-title {
+  font-size: 1.5rem;
+  color: var(--accent);
+  margin-bottom: 0.25rem;
+  letter-spacing: 2px;
+}
+
+.guild-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+}
+
+/* School Tabs */
+.school-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  padding: 0 1rem;
+}
+
+.school-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.school-tab:hover {
+  border-color: var(--school-color, var(--accent));
+  color: var(--text);
+}
+
+.school-tab.active {
+  background: var(--school-color, var(--accent));
+  border-color: var(--school-color, var(--accent));
+  color: var(--bg);
+}
+
+.school-icon {
+  font-size: 1.1rem;
+}
+
+.school-name {
+  font-weight: 600;
+}
+
+/* School Content */
+.school-content {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-top: 3px solid var(--school-color, var(--accent));
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+/* Category Cards Grid */
+.category-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.category-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.category-card:hover {
+  border-color: var(--school-color, var(--accent));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.category-card.expanded {
+  border-color: var(--school-color, var(--accent));
+  background: linear-gradient(180deg, var(--bg) 0%, rgba(212, 163, 115, 0.03) 100%);
+}
+
+.category-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--school-color, var(--accent));
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.category-card:hover::before,
+.category-card.expanded::before {
+  opacity: 1;
+}
+
+/* Card Header */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.card-title {
+  font-size: 1rem;
+  color: var(--text);
+  margin: 0;
+  font-weight: 600;
+}
+
+.card-count {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Champion Section */
+.card-champion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, rgba(212, 163, 115, 0.1) 0%, rgba(212, 163, 115, 0.02) 100%);
+  border: 1px solid var(--school-color, var(--accent));
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.champion-crown {
+  font-size: 1.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.champion-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0.1rem;
+}
+
+.champion-title {
+  font-size: 0.6rem;
+  color: var(--school-color, var(--accent));
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+}
+
+.champion-name {
+  font-size: 1rem;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.champion-level {
+  background: var(--school-color, var(--accent));
+  color: var(--bg);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Expanded Skills */
+.card-skills {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.skill-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0;
+  font-size: 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.skill-row:last-child {
+  border-bottom: none;
+}
+
+.skill-name {
+  color: var(--text);
+  text-transform: capitalize;
+}
+
+.skill-practitioners {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.skill-more {
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.card-hint {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  padding-top: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.category-card:hover .card-hint {
+  opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .school-tabs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .school-tab {
+    justify-content: center;
+  }
+  
+  .category-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .guild-title {
+    font-size: 1.25rem;
+  }
+}
+
 /* Responsive for skills */
 @media (max-width: 600px) {
   .skills-grid {
