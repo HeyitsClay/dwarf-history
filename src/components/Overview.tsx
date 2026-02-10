@@ -175,11 +175,11 @@ const ArtifactsCard = () => {
       </div>
       
       <div className="artifact-categories">
-        {/* Strange Mood Creations */}
+        {/* Artifacts Created */}
         <div className="artifact-category-card">
           <div className="artifact-category-header">
             <span className="artifact-icon">🎨</span>
-            <h3>Strange Mood Creations</h3>
+            <h3>Artifacts Created</h3>
             <span className="artifact-count">{artifactStats.moodCreations.toLocaleString()}</span>
           </div>
           <p className="artifact-description">Masterworks forged in the grip of madness</p>

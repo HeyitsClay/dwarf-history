@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useHashRouter } from './hooks/useHashRouter';
 import { useWorldData, useParsingGuard, useStorageGuard } from './hooks/useWorldData';
-import { db } from './db/database';
 import { UploadZone } from './components/UploadZone';
 import { Overview } from './components/Overview';
 import './App.css';
@@ -33,21 +32,10 @@ function App() {
     };
 
     const handleClearWorld = async () => {
-      if (confirm('Are you sure you want to clear all world data?')) {
+      if (confirm('Are you sure you want to clear all world data and load a new world?')) {
         await clearWorld();
         navigateToUpload();
       }
-    };
-
-    const handleExportJSON = async () => {
-      const json = await db.exportToJSON();
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${metadata?.name || 'world'}-parsed.json`;
-      a.click();
-      URL.revokeObjectURL(url);
     };
 
     const renderContent = () => {
@@ -97,17 +85,9 @@ function App() {
         )}
           <div className="header-actions">
             {hasData && (
-              <>
-                <button className="btn-header" onClick={handleExportJSON} title="Export parsed data">
-                  💾 Export
-                </button>
-                <button className="btn-header" onClick={() => navigateToUpload()} title="Load new world">
-                  📜 New World
-                </button>
-                <button className="btn-header btn-danger" onClick={handleClearWorld} title="Clear all data">
-                  🗑️ Clear
-                </button>
-              </>
+              <button className="btn-header" onClick={handleClearWorld} title="Load new world">
+                📜 New World
+              </button>
             )}
           </div>
         </header>
