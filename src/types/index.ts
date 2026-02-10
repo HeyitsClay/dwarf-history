@@ -67,6 +67,17 @@ export interface Entity {
   parentCiv?: number;
 }
 
+export interface Artifact {
+  id: number;
+  name: string;
+  itemType: string;
+  material: string;
+  creatorHfid?: number;
+  holderHfid?: number;
+  siteId?: number;
+  entityId?: number;
+}
+
 export interface HistoricalEvent {
   id: number;
   year: number;

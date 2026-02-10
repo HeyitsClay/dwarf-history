@@ -10,12 +10,13 @@ interface OverviewProps {
 
 export const Overview = ({ onNewWorld }: OverviewProps) => {
   const [worldName, setWorldName] = useState<string>('');
-  const [currentYear, setCurrentYear] = useState(0);
   const [livingCount, setLivingCount] = useState(0);
   const [totalDeaths, setTotalDeaths] = useState(0);
   const [topKiller, setTopKiller] = useState<HistoricalFigure | null>(null);
-  const [strongestCiv, setStrongestCiv] = useState<Entity | null>(null);
+  const [strongestCiv, setStrongestCiv] = useState<{ entity: Entity; members: number; living: number; kills: number; artifacts: number; power: number } | null>(null);
   const [raceStats, setRaceStats] = useState<{ race: string; count: number; living: number; kills: number; deaths: number; category: 'civilized' | 'monster' | 'animal' | 'other' }[]>([]);
+  const [artifactHolders, setArtifactHolders] = useState<{ entity: Entity; count: number; percentage: number }[]>([]);
+  const [topDeities, setTopDeities] = useState<{ name: string; worshippers: number }[]>([]);
   const [loadingStage, setLoadingStage] = useState('Initializing...');
   const [loadingProgress, setLoadingProgress] = useState(0);
 
@@ -45,11 +46,6 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           await new Promise(r => setTimeout(r, 0));
         }
 
-        const maxYear = allFigures.length > 0 
-          ? Math.max(...allFigures.map(f => f.deathYear > 0 ? f.deathYear : 0), 1)
-          : 1;
-        setCurrentYear(maxYear);
-        
         const living = allFigures.filter(f => f.deathYear <= 0);
         const dead = allFigures.filter(f => f.deathYear > 0);
         setLivingCount(living.length);
@@ -67,17 +63,74 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         setTopKiller(sortedKillers[0] || null);
 
         const allEntities = await db.entities.toArray();
+        
+        // Calculate artifacts held by each entity
+        const entityArtifacts = new Map<number, number>();
+        allFigures.forEach(f => {
+          if (f.holdsArtifact !== undefined && f.holdsArtifact >= 0) {
+            // Figure holds artifact directly - check their entity links
+            f.entityLinks?.forEach(link => {
+              if (link.linkType === 'member' || link.linkType === 'ruler') {
+                entityArtifacts.set(link.entityId, (entityArtifacts.get(link.entityId) || 0) + 1);
+              }
+            });
+          }
+        });
+        
+        // Calculate dominant civilization with new formula
         const civs = allEntities
-          .filter(e => e.name)
-          .map(entity => ({
-            entity,
-            members: allFigures.filter(f => 
-              f.entityLinks?.some(l => l.entityId === entity.id)
-            ).length
-          }))
+          .filter(e => e.name && (!e.type || e.type === 'civilization'))
+          .map(entity => {
+            const civMembers = allFigures.filter(f => 
+              f.entityLinks?.some(l => l.entityId === entity.id && (l.linkType === 'member' || l.linkType === 'ruler'))
+            );
+            const living = civMembers.filter(f => f.deathYear <= 0).length;
+            const kills = civMembers.reduce((sum, f) => sum + (f.kills?.length || 0), 0);
+            const artifacts = entityArtifacts.get(entity.id) || 0;
+            // Power formula: living members + (kills * 0.5) + (artifacts * 10)
+            const power = Math.round(living + (kills * 0.5) + (artifacts * 10));
+            return { 
+              entity, 
+              members: civMembers.length, 
+              living, 
+              kills, 
+              artifacts,
+              power 
+            };
+          })
           .filter(c => c.members > 0)
-          .sort((a, b) => b.members - a.members);
-        setStrongestCiv(civs[0]?.entity || null);
+          .sort((a, b) => b.power - a.power);
+        setStrongestCiv(civs[0] || null);
+
+        // Top artifact holders
+        const totalArtifacts = allFigures.filter(f => f.holdsArtifact !== undefined && f.holdsArtifact >= 0).length;
+        const topArtifactHolders = civs
+          .filter(c => c.artifacts > 0)
+          .slice(0, 6)
+          .map(c => ({
+            entity: c.entity,
+            count: c.artifacts,
+            percentage: totalArtifacts > 0 ? (c.artifacts / totalArtifacts) * 100 : 0
+          }));
+        setArtifactHolders(topArtifactHolders);
+
+        // Top deities (entities with worshipper links)
+        const deityWorship = new Map<string, number>();
+        allFigures.forEach(f => {
+          f.entityLinks?.forEach(link => {
+            if (link.linkType === 'worship' || link.linkType === 'deity') {
+              const entity = allEntities.find(e => e.id === link.entityId);
+              if (entity?.name) {
+                deityWorship.set(entity.name, (deityWorship.get(entity.name) || 0) + 1);
+              }
+            }
+          });
+        });
+        const sortedDeities = Array.from(deityWorship.entries())
+          .map(([name, count]) => ({ name, worshippers: count }))
+          .sort((a, b) => b.worshippers - a.worshippers)
+          .slice(0, 6);
+        setTopDeities(sortedDeities);
 
         // Categorize races
         const civilizedRaces = ['DWARF', 'HUMAN', 'ELF', 'GOBLIN'];
@@ -92,7 +145,6 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           return 'other';
         };
 
-        // Track stats, kills, and deaths per race
         const raceMap = new Map<string, { count: number; living: number; kills: number; deaths: number; category: 'civilized' | 'monster' | 'animal' | 'other' }>();
         
         allFigures.forEach(f => {
@@ -144,7 +196,7 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
       } catch (err) {
         console.error('Overview error:', err);
         setLoadingStage(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
-        setLoadingProgress(100); // Stop loading
+        setLoadingProgress(100);
       }
     };
 
@@ -160,8 +212,6 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
       percentage: (r.living / livingCount) * 100
     }));
   }, [raceStats, livingCount]);
-
-  // All races are now combined in racePercentages
 
   if (loadingProgress < 100 || loadingStage.includes('Error')) {
     const isError = loadingStage.includes('Error');
@@ -187,13 +237,9 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
 
   return (
     <div className="overview-dashboard">
-      {/* World Name & Year */}
+      {/* World Name */}
       <section className="world-header">
         <h1 className="world-title">{worldName}</h1>
-        <div className="year-display">
-          <span className="year-label">Year</span>
-          <span className="year-value">{currentYear.toLocaleString()}</span>
-        </div>
       </section>
 
       {/* The Count */}
@@ -234,14 +280,28 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         )}
         
         {strongestCiv && (
-          <div className="legend-block">
+          <div className="legend-block civ-highlight">
             <div className="legend-header">
-              <span className="legend-icon">🏛️</span>
+              <span className="legend-icon">👑</span>
               <span className="legend-title">Dominant Civilization</span>
             </div>
             <div className="legend-content">
-              <div className="legend-name">{strongestCiv.name}</div>
-              <div className="legend-meta">{strongestCiv.race || 'Mixed population'}</div>
+              <div className="legend-name">{strongestCiv.entity.name}</div>
+              <div className="legend-stats">
+                <div className="civ-stat">
+                  <span className="civ-stat-value">{strongestCiv.living.toLocaleString()}</span>
+                  <span className="civ-stat-label">living</span>
+                </div>
+                <div className="civ-stat">
+                  <span className="civ-stat-value">{strongestCiv.kills.toLocaleString()}</span>
+                  <span className="civ-stat-label">kills</span>
+                </div>
+                <div className="civ-stat">
+                  <span className="civ-stat-value">{strongestCiv.artifacts.toLocaleString()}</span>
+                  <span className="civ-stat-label">artifacts</span>
+                </div>
+              </div>
+              <div className="legend-meta">Power Score: {strongestCiv.power}</div>
             </div>
           </div>
         )}
@@ -355,6 +415,45 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           </div>
         </section>
       )}
+
+      {/* New Row - Artifacts & Deities */}
+      <section className="info-row">
+        {/* Artifact Holders */}
+        {artifactHolders.length > 0 && (
+          <div className="info-card">
+            <div className="info-header">
+              <span className="info-icon">💎</span>
+              <span className="info-title">Artifact Keepers</span>
+            </div>
+            <div className="info-list">
+              {artifactHolders.map((holder, idx) => (
+                <div key={idx} className="info-item">
+                  <span className="info-name">{holder.entity.name}</span>
+                  <span className="info-value">{holder.count} ({holder.percentage.toFixed(1)}%)</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Top Deities */}
+        {topDeities.length > 0 && (
+          <div className="info-card">
+            <div className="info-header">
+              <span className="info-icon">✨</span>
+              <span className="info-title">Most Worshipped</span>
+            </div>
+            <div className="info-list">
+              {topDeities.map((deity, idx) => (
+                <div key={idx} className="info-item">
+                  <span className="info-name">{deity.name}</span>
+                  <span className="info-value">{deity.worshippers.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* Action */}
       <section className="action-section">
