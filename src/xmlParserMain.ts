@@ -329,7 +329,15 @@ class SimpleXmlParser {
           break;
         case 'skill':
           if (this.state.inHfSkill) {
-            this.state.currentFigure.hfSkills.push({ skill: text });
+            // Sanitize skill name - remove any XML artifacts and normalize
+            let cleanSkill = text.replace(/<[^>]+>/g, '').trim();
+            // Also remove '>' prefix that can occur from chunk boundaries
+            cleanSkill = cleanSkill.replace(/^>/, '').trim();
+            // Remove any remaining HTML entities
+            cleanSkill = cleanSkill.replace(/&lt;[^&]+&gt;/g, '').trim();
+            if (cleanSkill) {
+              this.state.currentFigure.hfSkills.push({ skill: cleanSkill });
+            }
           }
           break;
         case 'total_ip':

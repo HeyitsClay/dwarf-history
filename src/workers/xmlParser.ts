@@ -225,7 +225,11 @@ class SimpleXmlParser {
         case 'skill':
           if (this.state.inHfSkill) {
             // Sanitize skill name - remove any XML artifacts and normalize
-            const cleanSkill = text.replace(/<[^>]+>/g, '').trim();
+            let cleanSkill = text.replace(/<[^>]+>/g, '').trim();
+            // Also remove '>' prefix that can occur from chunk boundaries
+            cleanSkill = cleanSkill.replace(/^>/, '').trim();
+            // Remove any remaining HTML entities
+            cleanSkill = cleanSkill.replace(/&lt;[^&]+&gt;/g, '').trim();
             if (cleanSkill) {
               this.state.currentFigure.hfSkills.push({ skill: cleanSkill });
             }
