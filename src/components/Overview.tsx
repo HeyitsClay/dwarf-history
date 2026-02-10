@@ -18,7 +18,7 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
   const [artifactHolders, setArtifactHolders] = useState<{ entity: Entity; count: number; percentage: number }[]>([]);
   const [topDeities, setTopDeities] = useState<{ name: string; worshippers: number }[]>([]);
   const [siteTypes, setSiteTypes] = useState<{ type: string; count: number; percentage: number }[]>([]);
-  const [skillsData, setSkillsData] = useState<{ category: string; skills: { skill: string; count: number; topFigures: { name: string; skillLevel: number }[] }[] }[]>([]);
+  const [skillsData, setSkillsData] = useState<{ category: string; bestMaster: { name: string; totalIp: number } | null; skills: { skill: string; count: number; topFigures: { name: string; skillLevel: number }[] }[] }[]>([]);
   const [loadingStage, setLoadingStage] = useState('Initializing...');
   const [loadingProgress, setLoadingProgress] = useState(0);
 
@@ -211,49 +211,77 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         // Skills aggregation - ALL skills grouped by category
         const figuresWithSkills = allFigures.filter(f => f.hfSkills && f.hfSkills.length > 0);
         
-        // Skill category mapping - comprehensive list
+        // Skill category mapping - reorganized into logical groups
         const getSkillCategory = (skill: string): string => {
           const s = skill.toUpperCase();
-          // Combat & Military - expanded with all weapon types and combat skills
-          if (['SWORD', 'SWORDS', 'SWORDSMANSHIP', 'SWORDSMAN', 'AXE', 'AXEMAN', 'AXEMANSHIP', 'MACE', 'MACEMAN', 'MACEMANSHIP', 'HAMMER', 'HAMMERMAN', 'HAMMERMANSHIP', 'SPEAR', 'SPEARMAN', 'SPEARMANSHIP', 'PIKE', 'PIKEMAN', 'PIKEMANSHIP', 'CROSSBOW', 'CROSSBOWMAN', 'BOW', 'BOWMAN', 'BOWYER', 'DAGGER', 'KNIFE', 'WHIP', 'SCOURGE', 'ARMOR', 'ARMOR_USER', 'SHIELD', 'SHIELD_USER', 'DODGE', 'DODGING', 'WRESTLE', 'WRESTLING', 'BITE', 'GRASP', 'GRASP_STRIKE', 'STANCE', 'STANCE_STRIKE', 'MELEE', 'MELEE_COMBAT', 'RANGED', 'RANGED_COMBAT', 'THROW', 'THROWING', 'SIEGE', 'SIEGEOPERATE', 'SIEGE_OPERATE', 'LEADERSHIP', 'TEACHING', 'MILITARY_TACTICS', 'DISCIPLINE', 'TACTICS', 'COMBAT', 'WAR', 'FIGHTING', 'PARRY', 'BLOCK', 'KICK', 'PUNCH', 'STRIKE'].includes(s)) return 'Combat & Military';
-          // Crafting & Production
-          if (['MINING', 'MASONRY', 'CARPENTRY', 'WOODCRAFT', 'STONECRAFT', 'METALCRAFT', 'WEAPONSMITH', 'WEAPONSMITHING', 'ARMORSMITH', 'ARMORSMITHING', 'BLACKSMITH', 'BLACKSMITHING', 'TANNING', 'LEATHERWORK', 'LEATHERWORKING', 'CLOTHESMAKING', 'GLASSMAKER', 'GLASSMAKING', 'POTTERY', 'BEEKEEPING', 'WAX_WORKING', 'CHEESEMAKING', 'COOKING', 'BREWING', 'MILLING', 'PROCESSPLANTS', 'PROCESS_PLANTS', 'BUTCHER', 'BUTCHERING', 'TRAPPING', 'TANNER', 'LAUNDERING', 'DYER', 'DYEING'].includes(s)) return 'Crafting & Production';
-          // Medical
-          if (['DIAGNOSE', 'DIAGNOSIS', 'SURGERY', 'SURGEON', 'SET_BONE', 'SET_BONES', 'SUTURE', 'SUTURING', 'DRESS_WOUNDS', 'DRESSING_WOUNDS', 'CRUTCH_WALK', 'CRUTCH_WALKING', 'WOUND_DRESSING', 'PHYSICIAN', 'DOCTOR', 'MEDIC'].includes(s)) return 'Medical';
-          // Farming & Agriculture
-          if (['GROWING', 'PLANT', 'PLANTS', 'HERBALISM', 'HERBALIST', 'FARMING', 'FARMING_FIELD', 'MILK', 'MILKING', 'SHEAR', 'SHEARER', 'SHEARING', 'SPINNING', 'WEAVING', 'PRESSING', 'POULTRY', 'POULTRY_KEEPING', 'BEE_KEEPING', 'GARDENING', 'CULTIVATION'].includes(s)) return 'Farming & Agriculture';
-          // Wood & Stone
-          if (['WOODCUTTING', 'WOOD_CUTTING', 'DETAILSTONE', 'DETAIL_STONE', 'ENCASEFORTIFICATION', 'ENCASE_FORTIFICATION', 'CONSOLEFORTIFICATION', 'CONSOLE_FORTIFICATION'].includes(s)) return 'Wood & Stone';
-          // Fishing
+          
+          // WARFARE - All combat skills, weapons, armor, tactics
+          if (['SWORD', 'SWORDS', 'SWORDSMANSHIP', 'SWORDSMAN', 'AXE', 'AXEMAN', 'AXEMANSHIP', 'MACE', 'MACEMAN', 'MACEMANSHIP', 'HAMMER', 'HAMMERMAN', 'HAMMERMANSHIP', 'SPEAR', 'SPEARMAN', 'SPEARMANSHIP', 'PIKE', 'PIKEMAN', 'PIKEMANSHIP', 'CROSSBOW', 'CROSSBOWMAN', 'BOW', 'BOWMAN', 'BOWYER', 'DAGGER', 'KNIFE', 'WHIP', 'SCOURGE', 'ARMOR', 'ARMOR_USER', 'SHIELD', 'SHIELD_USER', 'DODGE', 'DODGING', 'WRESTLE', 'WRESTLING', 'BITE', 'GRASP', 'GRASP_STRIKE', 'STANCE', 'STANCE_STRIKE', 'MELEE', 'MELEE_COMBAT', 'RANGED', 'RANGED_COMBAT', 'THROW', 'THROWING', 'SIEGE', 'SIEGEOPERATE', 'SIEGE_OPERATE', 'LEADERSHIP', 'TEACHING', 'MILITARY_TACTICS', 'DISCIPLINE', 'TACTICS', 'COMBAT', 'WAR', 'FIGHTING', 'PARRY', 'BLOCK', 'KICK', 'PUNCH', 'STRIKE', 'SIEGE_ENGINEERING', 'SIEGE_ENGINEER', 'BALLISTA', 'CATAPULT'].includes(s)) return 'Warfare';
+          
+          // METALWORKING - All smithing, smelting, forging, gems
+          if (['WEAPONSMITH', 'WEAPONSMITHING', 'ARMORSMITH', 'ARMORSMITHING', 'BLACKSMITH', 'BLACKSMITHING', 'METALCRAFT', 'SMELT', 'SMELTING', 'FORGE_WEAPON', 'FORGE_ARMOR', 'FORGE_FURNITURE', 'CUTGEM', 'CUT_GEM', 'ENCRUSTGEM', 'ENCRUST_GEM', 'EXTRACT_STRAND', 'METALLURGY'].includes(s)) return 'Metalworking';
+          
+          // CRAFTSMANSHIP - Wood, stone, glass, leather, cloth, crafts
+          if (['CARPENTRY', 'WOODCRAFT', 'STONECRAFT', 'POTTERY', 'GLASSMAKER', 'GLASSMAKING', 'LEATHERWORK', 'LEATHERWORKING', 'CLOTHESMAKING', 'TANNING', 'TANNER', 'DYER', 'DYEING', 'WEAVING', 'SPINNING', 'PAPERMAKING', 'BOOKBINDING', 'WAX_WORKING', 'GEM_SETTING', 'BONE_CARVE', 'BONE_CARVING', 'IVORY_CARVE', 'IVORY_CARVING', 'STONE_CARVE', 'STONE_CARVING', 'WOOD_CARVE', 'WOOD_CARVING'].includes(s)) return 'Craftsmanship';
+          
+          // CONSTRUCTION - Building, architecture, mechanics, mining, masonry
+          if (['MINING', 'MASONRY', 'ARCHITECTURE', 'ARCHITECT', 'DESIGNBUILDING', 'DESIGN_BUILDING', 'MECHANICS', 'MECHANIC', 'OPERATE_PUMP', 'PUMP_OPERATION', 'PUMP', 'DETAILSTONE', 'DETAIL_STONE', 'ENCASEFORTIFICATION', 'ENCASE_FORTIFICATION', 'CONSOLEFORTIFICATION', 'CONSOLE_FORTIFICATION', 'CONSTRUCTION', 'BUILDING'].includes(s)) return 'Construction';
+          
+          // HEALING - All medical skills
+          if (['DIAGNOSE', 'DIAGNOSIS', 'SURGERY', 'SURGEON', 'SET_BONE', 'SET_BONES', 'SUTURE', 'SUTURING', 'DRESS_WOUNDS', 'DRESSING_WOUNDS', 'WOUND_DRESSING', 'CRUTCH_WALK', 'CRUTCH_WALKING', 'PHYSICIAN', 'DOCTOR', 'MEDIC', 'FIRST_AID'].includes(s)) return 'Healing';
+          
+          // AGRICULTURE - Farming, plants, food production
+          if (['GROWING', 'PLANT', 'PLANTS', 'HERBALISM', 'HERBALIST', 'FARMING', 'FARMING_FIELD', 'MILLING', 'PROCESSPLANTS', 'PROCESS_PLANTS', 'BREWING', 'COOKING', 'CHEESEMAKING', 'PRESSING', 'BEEKEEPING', 'BEE_KEEPING', 'WAX_WORKING', 'GARDENING', 'CULTIVATION', 'THRESHING', 'BUTCHER', 'BUTCHERING'].includes(s)) return 'Agriculture';
+          
+          // ANIMAL ARTS - Animal care, hunting, everything animal-related
+          if (['ANIMALCARE', 'ANIMAL_CARE', 'ANIMALTRAIN', 'ANIMAL_TRAIN', 'TRAIN_ANIMALS', 'TAME', 'TAMING', 'RIDING', 'RIDER', 'HUNTING', 'HUNTER', 'TRAPPING', 'SNEAK', 'SNEAKING', 'AMBUSH', 'AMBUSHING', 'MILK', 'MILKING', 'SHEAR', 'SHEARER', 'SHEARING', 'POULTRY', 'POULTRY_KEEPING', 'ANIMAL_DISSECT', 'ANIMAL_DISSECTION'].includes(s)) return 'Animal Arts';
+          
+          // FISHING - All fish-related
           if (['FISH', 'FISHING', 'CLEAN_FISH', 'FISH_CLEANING', 'DISSECT_FISH', 'FISH_DISSECTION'].includes(s)) return 'Fishing';
-          // Metal & Gem
-          if (['SMELT', 'SMELTING', 'EXTRACT_STRAND', 'FORGE_WEAPON', 'FORGE_ARMOR', 'FORGE_FURNITURE', 'CUTGEM', 'CUT_GEM', 'ENCRUSTGEM', 'ENCRUST_GEM'].includes(s)) return 'Metal & Gem';
-          // Social & Administration
-          if (['CONSULT', 'CONSULTING', 'PERSUASION', 'NEGOTIATION', 'JUDGING_INTENT', 'APPRAISAL', 'ORGANIZATION', 'RECORD_KEEPING', 'LYING', 'INTIMIDATION', 'CONVERSATION', 'COMEDY', 'FLATTERY', 'PACIFY', 'PACIFICATION', 'CONSOLE', 'CONSOLATION', 'MANAGEMENT', 'LAW', 'JUDGING'].includes(s)) return 'Social & Administration';
-          // Knowledge & Science
-          if (['KNOWLEDGE', 'STUDENT', 'RESEARCHER', 'RESEARCH', 'CRITICAL_THINKING', 'LOGIC', 'MATHEMATICS', 'ASTRONOMY', 'CHEMISTRY', 'BIOLOGY', 'GEOGRAPHY', 'MEDICAL', 'MEDICINE', 'SCHOLAR', 'SCIENCE'].includes(s)) return 'Knowledge & Science';
-          // Engineering
-          if (['DESIGNBUILDING', 'DESIGN_BUILDING', 'ARCHITECTURE', 'ARCHITECT', 'OPERATE_PUMP', 'PUMP_OPERATION', 'MECHANICS', 'MECHANIC', 'SIEGE_ENGINEERING', 'SIEGE_ENGINEER', 'PUMP'].includes(s)) return 'Engineering';
-          // Arts & Literature
-          if (['WRITING', 'WRITER', 'PROSE', 'POETRY', 'POET', 'READING', 'READER', 'SPEAKING', 'SPEAKER', 'STORYTELLING', 'STORYTELLER', 'BOOKBINDING', 'SCROLL'].includes(s)) return 'Arts & Literature';
-          // Music & Performance
-          if (['MUSIC', 'MUSICIAN', 'SINGING', 'SINGER', 'DANCING', 'DANCER', 'PLAY_KEYBOARD', 'PLAY_STRING', 'PLAY_WIND', 'PLAY_PERCUSSION', 'PERFORMANCE', 'INSTRUMENT'].includes(s)) return 'Music & Performance';
-          // Hunting & Animals
-          if (['HUNTING', 'HUNTER', 'AMBUSH', 'AMBUSHING', 'SNEAK', 'SNEAKING', 'ANIMALTRAIN', 'ANIMAL_TRAIN', 'ANIMALCARE', 'ANIMAL_CARE', 'RIDING', 'RIDER', 'ANIMAL_DISSECT', 'ANIMAL_DISSECTION', 'TRAIN_ANIMALS', 'TAME', 'TAMING'].includes(s)) return 'Hunting & Animals';
-          // Physical
-          if (['CLIMBING', 'CLIMBER', 'SWIMMING', 'SWIMMER', 'SITUATIONAL_AWARENESS', 'KINESIOLOGIC_AWARENESS', 'DIRECTION_SENSE', 'BALANCE', 'COORDINATION', 'ATHLETICS', 'FITNESS'].includes(s)) return 'Physical';
+          
+          // SOCIAL ARTS - Leadership, persuasion, social skills
+          if (['LEADERSHIP', 'TEACHING', 'PERSUASION', 'NEGOTIATION', 'CONSULT', 'CONSULTING', 'JUDGING_INTENT', 'APPRAISAL', 'FLATTERY', 'INTIMIDATION', 'CONVERSATION', 'COMEDY', 'PACIFY', 'PACIFICATION', 'CONSOLE', 'CONSOLATION', 'LYING', 'ORGANIZATION', 'MANAGEMENT', 'LAW', 'JUDGING', 'DIPLOMACY', 'PUBLIC_SPEAKING'].includes(s)) return 'Social Arts';
+          
+          // SCHOLARSHIP - Knowledge, research, mental skills
+          if (['KNOWLEDGE', 'STUDENT', 'RESEARCHER', 'RESEARCH', 'CRITICAL_THINKING', 'LOGIC', 'MATHEMATICS', 'ASTRONOMY', 'CHEMISTRY', 'BIOLOGY', 'GEOGRAPHY', 'MEDICAL_KNOWLEDGE', 'MEDICINE', 'SCHOLAR', 'SCIENCE', 'STRATEGY', 'TRACKING', 'OBSERVATION'].includes(s)) return 'Scholarship';
+          
+          // RECORDS & ADMIN - Writing, record keeping, accounting
+          if (['RECORD_KEEPING', 'WRITING', 'WRITER', 'READING', 'READER', 'SPEAKING', 'SPEAKER', 'PROSE', 'POETRY', 'POET', 'STORYTELLING', 'STORYTELLER', 'BOOKBINDING', 'SCROLL', 'LITERACY', 'ADMINISTRATION', 'ACCOUNTING'].includes(s)) return 'Records & Lore';
+          
+          // PERFORMANCE - Music, dance, entertainment
+          if (['MUSIC', 'MUSICIAN', 'SINGING', 'SINGER', 'DANCING', 'DANCER', 'PLAY_KEYBOARD', 'PLAY_STRING', 'PLAY_WIND', 'PLAY_PERCUSSION', 'PERFORMANCE', 'INSTRUMENT', 'ACTING', 'COMEDY'].includes(s)) return 'Performance';
+          
+          // ATHLETICS - Physical activities, movement
+          if (['CLIMBING', 'CLIMBER', 'SWIMMING', 'SWIMMER', 'THROW', 'THROWING', 'BALANCE', 'COORDINATION', 'SITUATIONAL_AWARENESS', 'KINESIOLOGIC_AWARENESS', 'DIRECTION_SENSE', 'ATHLETICS', 'FITNESS', 'RUNNING', 'JUMPING'].includes(s)) return 'Athletics';
+          
+          // SERVICE - Cleaning, laundry, low-skill labor
+          if (['LAUNDERING', 'CLEANING', 'HAULING', 'SERVANT', 'PEASANT', 'LABOR', 'FOOD_PREP', 'PREPARE_FOOD'].includes(s)) return 'Service';
+          
           return 'Other';
         };
         
+        // Track skill data per category and per figure for best master calculation
         const skillMap = new Map<string, { count: number; category: string; figures: { name: string; totalIp: number }[] }>();
+        // Track category totals per figure: category -> figureId -> totalIp
+        const categoryFigureTotals = new Map<string, Map<string, number>>();
         
         figuresWithSkills.forEach(f => {
           f.hfSkills?.forEach(s => {
             const category = getSkillCategory(s.skill);
+            
+            // Track individual skill data
             const existing = skillMap.get(s.skill) || { count: 0, category, figures: [] };
             existing.count++;
             existing.figures.push({ name: f.name, totalIp: s.totalIp });
             skillMap.set(s.skill, existing);
+            
+            // Track category totals for best master calculation
+            if (!categoryFigureTotals.has(category)) {
+              categoryFigureTotals.set(category, new Map());
+            }
+            const figureTotals = categoryFigureTotals.get(category)!;
+            const currentTotal = figureTotals.get(f.name) || 0;
+            figureTotals.set(f.name, currentTotal + s.totalIp);
           });
         });
         
@@ -274,12 +302,29 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           categoryMap.set(category, existing);
         });
         
+        // Calculate best master for each category
+        const categoryBestMaster = new Map<string, { name: string; totalIp: number }>();
+        categoryFigureTotals.forEach((figureTotals, category) => {
+          let bestName = '';
+          let bestTotal = 0;
+          figureTotals.forEach((total, name) => {
+            if (total > bestTotal) {
+              bestTotal = total;
+              bestName = name;
+            }
+          });
+          if (bestName) {
+            categoryBestMaster.set(category, { name: bestName, totalIp: bestTotal });
+          }
+        });
+        
         // Sort categories and skills within each category
-        const categoryOrder = ['Combat & Military', 'Crafting & Production', 'Medical', 'Social & Administration', 'Knowledge & Science', 'Engineering', 'Farming & Agriculture', 'Hunting & Animals', 'Arts & Literature', 'Music & Performance', 'Fishing', 'Wood & Stone', 'Metal & Gem', 'Physical', 'Other'];
+        const categoryOrder = ['Warfare', 'Metalworking', 'Craftsmanship', 'Construction', 'Healing', 'Agriculture', 'Animal Arts', 'Fishing', 'Social Arts', 'Scholarship', 'Records & Lore', 'Performance', 'Athletics', 'Service', 'Other'];
         
         const groupedSkills = Array.from(categoryMap.entries())
           .map(([category, skills]) => ({
             category,
+            bestMaster: categoryBestMaster.get(category) || null,
             skills: skills.sort((a, b) => b.count - a.count)
           }))
           .sort((a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category));
@@ -611,7 +656,16 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
             </div>
             {skillsData.map((categoryData, cidx) => (
               <div key={cidx} className="skill-category">
-                <h4 className="skill-category-title">{categoryData.category}</h4>
+                <div className="skill-category-header">
+                  <h4 className="skill-category-title">{categoryData.category}</h4>
+                  {categoryData.bestMaster && (
+                    <div className="category-best-master">
+                      <span className="best-master-label">Best {categoryData.category === 'Service' ? 'Servant' : categoryData.category === 'Records & Lore' ? 'Loremaster' : categoryData.category === 'Animal Arts' ? 'Beastmaster' : categoryData.category.slice(0, -1)}</span>
+                      <span className="best-master-name">{categoryData.bestMaster.name}</span>
+                      <span className="best-master-total">{Math.floor(categoryData.bestMaster.totalIp / 100)} total</span>
+                    </div>
+                  )}
+                </div>
                 <div className="skills-grid">
                   {categoryData.skills.map((skillData, sidx) => (
                     <div key={sidx} className="skill-column">

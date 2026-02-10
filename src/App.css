@@ -785,14 +785,47 @@ html, body, #root {
   margin-bottom: 0;
 }
 
+.skill-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .skill-category-title {
   font-size: 0.8rem;
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 2px;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border);
+  margin: 0;
+}
+
+.category-best-master {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.best-master-label {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.best-master-name {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.best-master-total {
+  color: var(--text-muted);
+  font-size: 0.7rem;
 }
 
 .skills-grid {
