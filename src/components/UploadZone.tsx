@@ -18,6 +18,7 @@ interface ParseProgress {
     events: number;
     sites: number;
     entities: number;
+    artifacts: number;
   };
 }
 
@@ -59,8 +60,8 @@ export const UploadZone = ({ onComplete, existingData }: UploadZoneProps) => {
       setProgress({ phase: 'storing', progress: 85, message: 'Storing data...' });
 
       // Store data in IndexedDB
-      const { figures, events, sites, entities } = result;
-      console.log(`UploadZone: Storing ${figures.length} figures, ${events.length} events...`);
+      const { figures, events, sites, entities, artifacts } = result;
+      console.log(`UploadZone: Storing ${figures.length} figures, ${events.length} events, ${artifacts.length} artifacts...`);
 
       // Create metadata
       const metadata: WorldMetadata = {
@@ -70,6 +71,7 @@ export const UploadZone = ({ onComplete, existingData }: UploadZoneProps) => {
         eventCount: events.length,
         siteCount: sites.length,
         entityCount: entities.length,
+        artifactCount: artifacts.length,
         year: result.year,
       };
 
@@ -80,6 +82,7 @@ export const UploadZone = ({ onComplete, existingData }: UploadZoneProps) => {
       await db.bulkAddEvents(events);
       await db.bulkAddSites(sites);
       await db.bulkAddEntities(entities);
+      await db.bulkAddArtifacts(artifacts);
 
       console.log('UploadZone: All data stored!');
       setProgress({ phase: 'storing', progress: 100, message: 'Complete!' });
@@ -135,6 +138,7 @@ export const UploadZone = ({ onComplete, existingData }: UploadZoneProps) => {
             <span>Events: {progress.counts.events.toLocaleString()}</span>
             <span>Sites: {progress.counts.sites.toLocaleString()}</span>
             <span>Entities: {progress.counts.entities.toLocaleString()}</span>
+            <span>Artifacts: {progress.counts.artifacts.toLocaleString()}</span>
           </div>
         )}
         <button className="btn-cancel" onClick={handleCancel}>

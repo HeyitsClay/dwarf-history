@@ -71,11 +71,21 @@ export interface Artifact {
   id: number;
   name: string;
   itemType: string;
+  itemSubtype?: string;
   material: string;
   creatorHfid?: number;
   holderHfid?: number;
   siteId?: number;
   entityId?: number;
+  // For categorization
+  isRelic?: boolean;
+  isNamedAfterSlaying?: boolean;
+  slainBeastName?: string;
+  isWrittenContent?: boolean;
+  writtenContentType?: string;
+  writtenContentTitle?: string;
+  // Owner history for "lost treasures"
+  ownerHistory?: { hfid: number; year: number }[];
 }
 
 export interface HistoricalEvent {
@@ -113,6 +123,7 @@ export interface WorldMetadata {
   eventCount: number;
   siteCount: number;
   entityCount: number;
+  artifactCount: number;
   year: number;
 }
 
@@ -122,6 +133,7 @@ export interface ParsedWorld {
   events: HistoricalEvent[];
   sites: Site[];
   entities: Entity[];
+  artifacts: Artifact[];
 }
 
 export type ViewState = 

@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { HistoricalFigure, HistoricalEvent, Site, Entity, WorldMetadata } from '../types';
+import type { HistoricalFigure, HistoricalEvent, Site, Entity, Artifact, WorldMetadata } from '../types';
 
 console.log('Database: Initializing...');
 
@@ -8,6 +8,7 @@ export class DwarfHistoryDB extends Dexie {
   events!: Table<HistoricalEvent, number>;
   sites!: Table<Site, number>;
   entities!: Table<Entity, number>;
+  artifacts!: Table<Artifact, number>;
   metadata!: Table<WorldMetadata, string>;
 
   constructor() {
@@ -19,6 +20,7 @@ export class DwarfHistoryDB extends Dexie {
       events: 'id, year, type, slayerHfid, hfid, [type+slayerHfid]',
       sites: 'id, name, type',
       entities: 'id, name, race',
+      artifacts: 'id, name, itemType, isRelic, isNamedAfterSlaying, isWrittenContent',
       metadata: 'name',
     });
     
@@ -30,6 +32,7 @@ export class DwarfHistoryDB extends Dexie {
     await this.events.clear();
     await this.sites.clear();
     await this.entities.clear();
+    await this.artifacts.clear();
     await this.metadata.clear();
   }
 
@@ -108,6 +111,20 @@ export class DwarfHistoryDB extends Dexie {
     }
   }
 
+  async bulkAddArtifacts(artifacts: Artifact[], progressCallback?: (count: number) => void): Promise<void> {
+    // Filter out entries without valid IDs and remove duplicates
+    const validArtifacts = artifacts.filter(a => a.id !== undefined && a.id !== null);
+    const uniqueArtifacts = Array.from(new Map(validArtifacts.map(a => [a.id, a])).values());
+    const batchSize = 500;
+    for (let i = 0; i < uniqueArtifacts.length; i += batchSize) {
+      const batch = uniqueArtifacts.slice(i, i + batchSize);
+      await this.artifacts.bulkPut(batch); // Use bulkPut to overwrite duplicates
+      if (progressCallback) {
+        progressCallback(Math.min(i + batchSize, uniqueArtifacts.length));
+      }
+    }
+  }
+
   async exportToJSON(): Promise<string> {
     const data = {
       metadata: await this.metadata.toArray(),
@@ -115,6 +132,7 @@ export class DwarfHistoryDB extends Dexie {
       events: await this.events.toArray(),
       sites: await this.sites.toArray(),
       entities: await this.entities.toArray(),
+      artifacts: await this.artifacts.toArray(),
     };
     return JSON.stringify(data, null, 2);
   }
@@ -127,6 +145,7 @@ export class DwarfHistoryDB extends Dexie {
     if (data.events) await this.bulkAddEvents(data.events);
     if (data.sites) await this.bulkAddSites(data.sites);
     if (data.entities) await this.bulkAddEntities(data.entities);
+    if (data.artifacts) await this.bulkAddArtifacts(data.artifacts);
   }
 }
 

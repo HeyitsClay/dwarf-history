@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-import type { HistoricalFigure, HistoricalEvent, Site, Entity } from '../types';
+import type { HistoricalFigure, HistoricalEvent, Site, Entity, Artifact } from '../types';
 
 // Simple XML parser state machine
 interface ParserState {
@@ -8,6 +8,9 @@ interface ParserState {
   inHistoricalEvent: boolean;
   inSite: boolean;
   inEntity: boolean;
+  inArtifact: boolean;
+  inArtifactLink: boolean;
+  inWrittenContent: boolean;
   inEntityLink: boolean;
   inHfLink: boolean;
   inHfSkill: boolean;
@@ -23,6 +26,13 @@ interface ParserState {
   currentEvent: Partial<HistoricalEvent>;
   currentSite: Partial<Site>;
   currentEntity: Partial<Entity>;
+  currentArtifact: Partial<Artifact>;
+  currentWrittenContent: Partial<{
+    id: number;
+    title: string;
+    type: string;
+    authorHfid: number;
+  }>;
 }
 
 class SimpleXmlParser {
@@ -30,6 +40,8 @@ class SimpleXmlParser {
   private events: HistoricalEvent[] = [];
   private sites: Site[] = [];
   private entities: Entity[] = [];
+  private artifacts: Artifact[] = [];
+  private writtenContents: Map<number, { title: string; type: string; authorHfid: number }> = new Map();
   
   private state: ParserState;
   private totalBytes: number;
@@ -47,6 +59,9 @@ class SimpleXmlParser {
       inHistoricalEvent: false,
       inSite: false,
       inEntity: false,
+      inArtifact: false,
+      inArtifactLink: false,
+      inWrittenContent: false,
       inEntityLink: false,
       inHfLink: false,
       inHfSkill: false,
@@ -56,6 +71,8 @@ class SimpleXmlParser {
       currentEvent: {},
       currentSite: {},
       currentEntity: {},
+      currentArtifact: {},
+      currentWrittenContent: {},
     };
   }
 
@@ -121,6 +138,7 @@ class SimpleXmlParser {
           events: this.events.length,
           sites: this.sites.length,
           entities: this.entities.length,
+          artifacts: this.artifacts.length,
         },
       });
     }
@@ -146,6 +164,17 @@ class SimpleXmlParser {
       case 'entity':
         this.state.inEntity = true;
         this.state.currentEntity = {};
+        break;
+      case 'artifact':
+        this.state.inArtifact = true;
+        this.state.currentArtifact = { ownerHistory: [] };
+        break;
+      case 'written_content':
+        this.state.inWrittenContent = true;
+        this.state.currentWrittenContent = {};
+        break;
+      case 'artifact_link':
+        this.state.inArtifactLink = true;
         break;
       case 'entity_link':
         this.state.inEntityLink = true;
@@ -371,15 +400,100 @@ class SimpleXmlParser {
       }
     }
 
+    // Parse written content (for books/slabs)
+    if (this.state.inWrittenContent) {
+      switch (name) {
+        case 'id':
+          this.state.currentWrittenContent.id = parseInt(text, 10);
+          break;
+        case 'title':
+          this.state.currentWrittenContent.title = text;
+          break;
+        case 'type':
+          this.state.currentWrittenContent.type = text;
+          break;
+        case 'author_hfid':
+          this.state.currentWrittenContent.authorHfid = parseInt(text, 10);
+          break;
+        case 'written_content':
+          this.state.inWrittenContent = false;
+          if (this.state.currentWrittenContent.id !== undefined) {
+            this.writtenContents.set(this.state.currentWrittenContent.id, {
+              title: this.state.currentWrittenContent.title || '',
+              type: this.state.currentWrittenContent.type || '',
+              authorHfid: this.state.currentWrittenContent.authorHfid || -1,
+            });
+          }
+          break;
+      }
+    }
+
+    // Parse artifacts
+    if (this.state.inArtifact) {
+      switch (name) {
+        case 'id':
+          this.state.currentArtifact.id = parseInt(text, 10);
+          break;
+        case 'name':
+          this.state.currentArtifact.name = text;
+          break;
+        case 'item_type':
+          this.state.currentArtifact.itemType = text;
+          break;
+        case 'item_subtype':
+          this.state.currentArtifact.itemSubtype = text;
+          break;
+        case 'material':
+          this.state.currentArtifact.material = text;
+          break;
+        case 'creator_hfid':
+          this.state.currentArtifact.creatorHfid = parseInt(text, 10);
+          break;
+        case 'holder_hfid':
+          this.state.currentArtifact.holderHfid = parseInt(text, 10);
+          break;
+        case 'site_id':
+          this.state.currentArtifact.siteId = parseInt(text, 10);
+          break;
+        case 'entity_id':
+          this.state.currentArtifact.entityId = parseInt(text, 10);
+          break;
+        case 'is_relic':
+          this.state.currentArtifact.isRelic = text === '1' || text.toLowerCase() === 'true';
+          break;
+        case 'is_named_after_slaying':
+          this.state.currentArtifact.isNamedAfterSlaying = text === '1' || text.toLowerCase() === 'true';
+          break;
+        case 'slain_beast_name':
+          this.state.currentArtifact.slainBeastName = text;
+          break;
+        case 'written_content_id':
+          // Link to written content for books/slabs
+          const wcId = parseInt(text, 10);
+          const wc = this.writtenContents.get(wcId);
+          if (wc) {
+            this.state.currentArtifact.isWrittenContent = true;
+            this.state.currentArtifact.writtenContentType = wc.type;
+            this.state.currentArtifact.writtenContentTitle = wc.title;
+          }
+          break;
+        case 'artifact':
+          this.state.inArtifact = false;
+          this.artifacts.push(this.state.currentArtifact as Artifact);
+          break;
+      }
+    }
+
     this.state.currentText = '';
   }
 
-  finalize(): { figures: HistoricalFigure[]; events: HistoricalEvent[]; sites: Site[]; entities: Entity[] } {
+  finalize(): { figures: HistoricalFigure[]; events: HistoricalEvent[]; sites: Site[]; entities: Entity[]; artifacts: Artifact[] } {
     return {
       figures: this.figures,
       events: this.events,
       sites: this.sites,
       entities: this.entities,
+      artifacts: this.artifacts,
     };
   }
 }
@@ -457,6 +571,7 @@ self.onmessage = async (e: MessageEvent) => {
         events: result.events.filter(e => e.id != null && !isNaN(e.id)),
         sites: result.sites.filter(s => s.id != null && !isNaN(s.id)),
         entities: result.entities.filter(en => en.id != null && !isNaN(en.id)),
+        artifacts: result.artifacts.filter(a => a.id != null && !isNaN(a.id)),
       };
       
       self.postMessage({
