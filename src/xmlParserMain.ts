@@ -538,6 +538,11 @@ class SimpleXmlParser {
 
     // Parse artifacts
     if (this.state.inArtifact) {
+      // Debug: Log ALL fields for first 2 artifacts to diagnose issue
+      if (this.artifacts.length < 2) {
+        console.log(`Artifact[${this.artifacts.length}] <${name}>: "${text?.substring(0, 50)}"`);
+      }
+      
       switch (name) {
         case 'id':
           this.state.currentArtifact.id = parseInt(text, 10);

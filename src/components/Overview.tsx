@@ -145,12 +145,9 @@ const ArtifactsCard = () => {
           (!a.entityId || a.entityId <= 0)
         ).length;
         
-        // If data is corrupted (no names), show warning in stats
-        const displayCreated = hasCorruptedData ? -1 : created;
-        
         setArtifactStats({
           total: allArtifacts.length,
-          created: displayCreated,
+          created,
           heroic,
           holy,
           written,
@@ -169,20 +166,12 @@ const ArtifactsCard = () => {
   if (!artifactStats || artifactStats.total === 0) {
     return null;
   }
-  
-  // Check if showing corrupted data warning
-  const needsReupload = artifactStats.created === -1;
 
   return (
     <section className="artifacts-section">
       <div className="artifacts-header">
         <h2 className="artifacts-title">🏺 Artifacts</h2>
         <p className="artifacts-subtitle">{artifactStats.total.toLocaleString()} Legendary Items</p>
-        {needsReupload && (
-          <p className="artifacts-warning" style={{ color: '#e76f51', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-            ⚠️ Data needs re-upload - Click "New World" to reload your file
-          </p>
-        )}
       </div>
       
       <div className="artifact-categories-simple">
