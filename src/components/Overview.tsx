@@ -102,30 +102,33 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           raceMap.set(f.race, current);
         });
         
-        // Priority order for civilized races
-        const priorityOrder = ['DWARF', 'HUMAN', 'ELF', 'GOBLIN'];
-        const allRaces = Array.from(raceMap.entries()).map(([race, data]) => ({ race, ...data }));
+        // Aggregate by category
+        const civilizedRaceList = ['DWARF', 'HUMAN', 'ELF', 'GOBLIN'];
+        let monsterTotal = { race: 'Monsters', count: 0, living: 0, category: 'civilized' as const };
+        let wildlifeTotal = { race: 'Wildlife', count: 0, living: 0, category: 'civilized' as const };
         
-        // Separate civilized, monsters, animals, other
-        const civilized = allRaces
-          .filter(r => r.category === 'civilized')
-          .sort((a, b) => priorityOrder.indexOf(a.race) - priorityOrder.indexOf(b.race));
+        const raceList: { race: string; count: number; living: number; category: 'civilized' | 'monster' | 'animal' | 'other' }[] = [];
         
-        const monsters = allRaces
-          .filter(r => r.category === 'monster')
-          .sort((a, b) => b.living - a.living);
+        raceMap.forEach((data, raceName) => {
+          if (civilizedRaceList.includes(raceName)) {
+            raceList.push({ race: raceName, ...data });
+          } else if (data.category === 'monster') {
+            monsterTotal.count += data.count;
+            monsterTotal.living += data.living;
+          } else if (data.category === 'animal') {
+            wildlifeTotal.count += data.count;
+            wildlifeTotal.living += data.living;
+          }
+        });
         
-        const animals = allRaces
-          .filter(r => r.category === 'animal')
-          .sort((a, b) => b.living - a.living)
-          .slice(0, 3); // Top 3 animals
+        // Sort civilized: DWARF, HUMAN, ELF, GOBLIN
+        raceList.sort((a, b) => civilizedRaceList.indexOf(a.race) - civilizedRaceList.indexOf(b.race));
         
-        const others = allRaces
-          .filter(r => r.category === 'other')
-          .sort((a, b) => b.living - a.living)
-          .slice(0, 2); // Top 2 others
+        // Add aggregates if they have population
+        if (monsterTotal.living > 0) raceList.push(monsterTotal);
+        if (wildlifeTotal.living > 0) raceList.push(wildlifeTotal);
         
-        setRaceStats([...civilized, ...monsters.slice(0, 3), ...animals, ...others]);
+        setRaceStats(raceList);
         setLoadingProgress(100);
 
       } catch (err) {
@@ -148,10 +151,7 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
     }));
   }, [raceStats, livingCount]);
 
-  const civilizedRaces = racePercentages.filter(r => r.category === 'civilized');
-  const monsterRaces = racePercentages.filter(r => r.category === 'monster');
-  const animalRaces = racePercentages.filter(r => r.category === 'animal');
-  // const otherRaces = racePercentages.filter(r => r.category === 'other');
+  // All races are now combined in racePercentages
 
   if (loadingProgress < 100 || loadingStage.includes('Error')) {
     const isError = loadingStage.includes('Error');
@@ -208,14 +208,16 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
       {/* Legends */}
       <section className="legends-section">
         {topKiller && (
-          <div className="legend-block">
+          <div className="legend-block killer-highlight">
             <div className="legend-header">
               <span className="legend-icon">🗡️</span>
               <span className="legend-title">Deadliest Figure</span>
             </div>
             <div className="legend-content">
+              <div className="legend-kill-count">{topKiller.kills?.length || 0}</div>
+              <div className="legend-kill-label">kills</div>
               <div className="legend-name">{topKiller.name}</div>
-              <div className="legend-meta">{topKiller.race} • {topKiller.kills?.length || 0} kills</div>
+              <div className="legend-meta">{topKiller.race}</div>
             </div>
           </div>
         )}
@@ -234,77 +236,40 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         )}
       </section>
 
-      {/* Population - Civilized */}
-      {civilizedRaces.length > 0 && (
+      {/* Population */}
+      {racePercentages.length > 0 && (
         <section className="population-section">
-          <h3 className="section-header">Civilized Races</h3>
+          <h3 className="section-header">Population</h3>
           <div className="population-bars">
-            {civilizedRaces.map(({ race, living, percentage }) => (
-              <div key={race} className="pop-bar civilized">
-                <div className="pop-label">
-                  <span className="pop-name">{race}</span>
-                  <span className="pop-count">{living.toLocaleString()}</span>
+            {racePercentages.map(({ race, living, percentage }) => {
+              // Determine color based on race type
+              let color = '#6b6b6b'; // default gray
+              if (race === 'DWARF') color = '#d4a373';
+              else if (race === 'HUMAN') color = '#2a9d8f';
+              else if (race === 'ELF') color = '#e9c46a';
+              else if (race === 'GOBLIN') color = '#e76f51';
+              else if (race === 'Monsters') color = '#9b2226';
+              else if (race === 'Wildlife') color = '#6b6b6b';
+              
+              return (
+                <div key={race} className="pop-bar">
+                  <div className="pop-label">
+                    <span className="pop-name">{race}</span>
+                    <span className="pop-count">{living.toLocaleString()}</span>
+                  </div>
+                  <div className="pop-track">
+                    <div 
+                      className="pop-fill"
+                      style={{ 
+                        width: `${Math.max(percentage, 1)}%`,
+                        backgroundColor: color
+                      }}
+                    />
+                  </div>
+                  <span className="pop-percent">{percentage.toFixed(1)}%</span>
                 </div>
-                <div className="pop-track">
-                  <div 
-                    className="pop-fill"
-                    style={{ 
-                      width: `${Math.max(percentage, 1)}%`,
-                      backgroundColor: race === 'DWARF' ? '#d4a373' : race === 'HUMAN' ? '#2a9d8f' : race === 'ELF' ? '#e9c46a' : '#e76f51'
-                    }}
-                  />
-                </div>
-                <span className="pop-percent">{percentage.toFixed(1)}%</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Population - Monsters */}
-      {monsterRaces.length > 0 && (
-        <section className="population-section">
-          <h3 className="section-header">Monsters</h3>
-          <div className="population-bars">
-            {monsterRaces.map(({ race, living, percentage }) => (
-              <div key={race} className="pop-bar monster">
-                <div className="pop-label">
-                  <span className="pop-name">{race}</span>
-                  <span className="pop-count">{living.toLocaleString()}</span>
-                </div>
-                <div className="pop-track">
-                  <div 
-                    className="pop-fill"
-                    style={{ width: `${Math.max(percentage, 0.5)}%`, backgroundColor: '#9b2226' }}
-                  />
-                </div>
-                <span className="pop-percent">{percentage.toFixed(1)}%</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Population - Wildlife */}
-      {animalRaces.length > 0 && (
-        <section className="population-section">
-          <h3 className="section-header">Wildlife</h3>
-          <div className="population-bars">
-            {animalRaces.map(({ race, living, percentage }) => (
-              <div key={race} className="pop-bar animal">
-                <div className="pop-label">
-                  <span className="pop-name">{race}</span>
-                  <span className="pop-count">{living.toLocaleString()}</span>
-                </div>
-                <div className="pop-track">
-                  <div 
-                    className="pop-fill"
-                    style={{ width: `${Math.max(percentage, 0.5)}%`, backgroundColor: '#6b6b6b' }}
-                  />
-                </div>
-                <span className="pop-percent">{percentage.toFixed(1)}%</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}

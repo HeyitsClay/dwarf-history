@@ -55,6 +55,7 @@ html, body, #root {
 .world-name {
   font-size: 0.85rem;
   color: var(--text-muted);
+  margin-bottom: 0.25rem;
 }
 
 .header-actions {
@@ -247,6 +248,11 @@ html, body, #root {
   margin-bottom: 0;
 }
 
+.legend-block.killer-highlight {
+  border-color: var(--red);
+  background: linear-gradient(135deg, var(--bg-card) 0%, rgba(239, 68, 68, 0.05) 100%);
+}
+
 .legend-header {
   display: flex;
   align-items: center;
@@ -263,6 +269,26 @@ html, body, #root {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.legend-content {
+  text-align: center;
+}
+
+.legend-kill-count {
+  font-size: 3rem;
+  font-weight: bold;
+  color: var(--red);
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.legend-kill-label {
+  font-size: 0.8rem;
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 0.75rem;
 }
 
 .legend-name {

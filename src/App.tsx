@@ -94,7 +94,7 @@ function App() {
             <div className="world-info">
               <span className="world-name">{metadata.name}</span>
               <span className="world-stats">
-                {metadata.figureCount.toLocaleString()} figures
+                {metadata.figureCount.toLocaleString().replace(/,/g, ', ')} figures
               </span>
             </div>
           )}
