@@ -98,39 +98,60 @@ const ArtifactsCard = () => {
         // Log raw data for debugging
         console.log(`Loaded ${allArtifacts.length} artifacts`);
         if (allArtifacts.length > 0) {
-          console.log('First artifact:', allArtifacts[0]);
+          console.log('First 3 artifacts:');
+          allArtifacts.slice(0, 3).forEach((a, i) => {
+            console.log(`Artifact ${i}:`, {
+              id: a.id,
+              name: a.name,
+              itemType: a.itemType,
+              itemSubtype: a.itemSubtype,
+              creatorHfid: a.creatorHfid,
+              isRelic: a.isRelic,
+              isNamedAfterSlaying: a.isNamedAfterSlaying,
+              isWrittenContent: a.isWrittenContent,
+              holderHfid: a.holderHfid,
+              siteId: a.siteId,
+              entityId: a.entityId
+            });
+          });
         }
         
-        // Simple categorization based on available data
-        // Most artifacts in DF are "created" - they have a creator_hf_id
-        const created = allArtifacts.filter(a => a.creatorHfid && a.creatorHfid !== -1).length;
+        // Debug: Count artifacts with various properties
+        const withCreator = allArtifacts.filter(a => a.creatorHfid && a.creatorHfid > 0).length;
+        const withCreatorUndefined = allArtifacts.filter(a => a.creatorHfid === undefined).length;
+        const withCreatorNegative = allArtifacts.filter(a => a.creatorHfid === -1).length;
+        console.log('Creator analysis:', { withCreator, withCreatorUndefined, withCreatorNegative });
+        
+        // Categorize artifacts
+        // "Created" = any artifact with a valid creator_hf_id (> 0, not -1, not undefined)
+        const created = allArtifacts.filter(a => a.creatorHfid && a.creatorHfid > 0).length;
         
         // Heroic = explicitly named after slaying OR name suggests it
         const heroic = allArtifacts.filter(a => {
-          if (a.isNamedAfterSlaying) return true;
+          if (a.isNamedAfterSlaying === true) return true;
           const name = a.name?.toLowerCase() || '';
           return name.includes('slay') || name.includes('killer') || name.includes('bane');
         }).length;
         
         // Holy = explicitly marked as relic OR held by entity (temple/religion)
         const holy = allArtifacts.filter(a => {
-          if (a.isRelic) return true;
-          return a.entityId && a.entityId !== -1;
+          if (a.isRelic === true) return true;
+          return a.entityId && a.entityId > 0;
         }).length;
         
         // Written = books, scrolls, slabs, etc.
         const written = allArtifacts.filter(a => {
-          if (a.isWrittenContent) return true;
+          if (a.isWrittenContent === true) return true;
           const type = `${a.itemType || ''} ${a.itemSubtype || ''}`.toLowerCase();
           return type.includes('book') || type.includes('scroll') || type.includes('slab') || 
                  type.includes('codex') || type.includes('page');
         }).length;
         
-        // Lost = no current location
+        // Lost = no current location (holder, site, or entity)
         const lost = allArtifacts.filter(a => 
-          (!a.holderHfid || a.holderHfid === -1) && 
-          (!a.siteId || a.siteId === -1) &&
-          (!a.entityId || a.entityId === -1)
+          (!a.holderHfid || a.holderHfid <= 0) && 
+          (!a.siteId || a.siteId <= 0) &&
+          (!a.entityId || a.entityId <= 0)
         ).length;
         
         setArtifactStats({
