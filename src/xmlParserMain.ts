@@ -293,13 +293,14 @@ class SimpleXmlParser {
     const text = this.state.currentText.trim();
     
     // Capture world name (top-level name tag before any figures/events)
-    if (name === 'name' && !this.worldName && !this.state.inHistoricalFigure && !this.state.inHistoricalEvent && !this.state.inSite && !this.state.inEntity) {
+    if (name === 'name' && !this.worldName && !this.state.inHistoricalFigure && !this.state.inHistoricalEvent && !this.state.inSite && !this.state.inEntity && !this.state.inArtifact && !this.state.inWrittenContent) {
       this.worldName = text;
       return;
     }
     
     // Parse historical figures
-    if (this.state.inHistoricalFigure) {
+    // Note: Check !inArtifact to avoid capturing artifact fields
+    if (this.state.inHistoricalFigure && !this.state.inArtifact) {
       switch (name) {
         case 'id':
           this.state.currentFigure.id = parseInt(text, 10);

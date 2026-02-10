@@ -192,7 +192,8 @@ class SimpleXmlParser {
     const text = this.state.currentText.trim();
     
     // Parse historical figures
-    if (this.state.inHistoricalFigure) {
+    // Note: Check !inArtifact to avoid capturing artifact fields
+    if (this.state.inHistoricalFigure && !this.state.inArtifact) {
       switch (name) {
         case 'id':
           this.state.currentFigure.id = parseInt(text, 10);
