@@ -9,7 +9,6 @@ interface OverviewProps {
 }
 
 export const Overview = ({ onNewWorld }: OverviewProps) => {
-  const [worldName, setWorldName] = useState<string>('');
   const [year, setYear] = useState<number>(0);
   const [livingCount, setLivingCount] = useState(0);
   const [totalDeaths, setTotalDeaths] = useState(0);
@@ -30,7 +29,6 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         setLoadingProgress(10);
         const meta = await db.getMetadata();
         if (isCancelled) return;
-        setWorldName(meta?.name || 'Unknown World');
         setYear(meta?.year || 0);
 
         setLoadingStage('Loading figures...');
@@ -239,9 +237,8 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
 
   return (
     <div className="overview-dashboard">
-      {/* World Name & Year */}
+      {/* Year */}
       <section className="world-header">
-        <h1 className="world-title">{worldName}</h1>
         {year > 0 && <div className="world-year-display">Year {year}</div>}
       </section>
 

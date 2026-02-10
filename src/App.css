@@ -189,10 +189,10 @@ html, body, #root {
 }
 
 .world-year-display {
-  font-size: 1rem;
+  font-size: 2rem;
   color: var(--accent);
   letter-spacing: 2px;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .year-display {
