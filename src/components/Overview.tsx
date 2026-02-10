@@ -339,13 +339,14 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         
         figuresWithSkills.forEach(f => {
           f.hfSkills?.forEach(s => {
-            const category = getSkillCategory(s.skill);
+            const skillName = s.skill.toUpperCase();
+            const category = getSkillCategory(skillName);
             
-            // Track individual skill data
-            const existing = skillMap.get(s.skill) || { count: 0, category, figures: [] };
+            // Track individual skill data (normalized to uppercase to prevent duplicates)
+            const existing = skillMap.get(skillName) || { count: 0, category, figures: [] };
             existing.count++;
             existing.figures.push({ name: f.name, totalIp: s.totalIp });
-            skillMap.set(s.skill, existing);
+            skillMap.set(skillName, existing);
             
             // Track category totals for best master calculation
             if (!categoryFigureTotals.has(category)) {
