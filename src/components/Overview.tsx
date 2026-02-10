@@ -507,7 +507,7 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         const categoryBestMaster = new Map<string, { name: string; totalIp: number }>();
         categoryFigureTotals.forEach((figureTotals, category) => {
           let bestName = '';
-          let bestTotal = 0;
+          let bestTotal = -1;
           figureTotals.forEach((total, name) => {
             if (total > bestTotal) {
               bestTotal = total;
@@ -516,6 +516,34 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           });
           if (bestName) {
             categoryBestMaster.set(category, { name: bestName, totalIp: bestTotal });
+          }
+        });
+        
+        // Fallback: ensure categories with skills have a best master
+        // (handles edge case where skills exist but IP calculation had issues)
+        categoryMap.forEach((skills, category) => {
+          if (!categoryBestMaster.has(category) && skills.length > 0) {
+            // Find the figure with highest total IP across all skills in this category
+            const figureTotals = new Map<string, number>();
+            skills.forEach(skill => {
+              skill.topFigures.forEach(fig => {
+                const current = figureTotals.get(fig.name) || 0;
+                figureTotals.set(fig.name, current + fig.skillLevel * 100);
+              });
+            });
+            
+            let bestName = '';
+            let bestTotal = -1;
+            figureTotals.forEach((total, name) => {
+              if (total > bestTotal) {
+                bestTotal = total;
+                bestName = name;
+              }
+            });
+            
+            if (bestName) {
+              categoryBestMaster.set(category, { name: bestName, totalIp: bestTotal });
+            }
           }
         });
         
@@ -529,6 +557,18 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
             skills: skills.sort((a, b) => b.count - a.count)
           }))
           .sort((a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category));
+        
+        // Debug logging for Athletics category
+        const athleticsData = groupedSkills.find(g => g.category === 'Athletics');
+        if (athleticsData) {
+          console.log('Athletics category:', {
+            skills: athleticsData.skills.map(s => ({ skill: s.skill, count: s.count })),
+            bestMaster: athleticsData.bestMaster,
+            categoryFigureTotals: categoryFigureTotals.get('Athletics') 
+              ? Object.fromEntries(categoryFigureTotals.get('Athletics')!)
+              : null
+          });
+        }
         
         setSkillsData(groupedSkills);
 
