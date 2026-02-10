@@ -93,9 +93,6 @@ function App() {
           {metadata && (
           <div className="world-info">
             <span className="world-name">{metadata.name}</span>
-            {metadata.year > 0 && (
-              <span className="world-year">Year {metadata.year}</span>
-            )}
           </div>
         )}
           <div className="header-actions">
