@@ -64,12 +64,13 @@ export const UploadZone = ({ onComplete, existingData }: UploadZoneProps) => {
 
       // Create metadata
       const metadata: WorldMetadata = {
-        name: file.name.replace(/\.xml$/i, ''),
+        name: result.worldName,
         version: 'unknown',
         figureCount: figures.length,
         eventCount: events.length,
         siteCount: sites.length,
         entityCount: entities.length,
+        year: result.year,
       };
 
       await db.metadata.put(metadata);

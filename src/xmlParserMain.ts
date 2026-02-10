@@ -26,7 +26,14 @@ interface ParserState {
 export async function parseLegendsFile(
   file: File,
   onProgress: (progress: number, counts: { figures: number; events: number; sites: number; entities: number }) => void
-): Promise<{ figures: HistoricalFigure[]; events: HistoricalEvent[]; sites: Site[]; entities: Entity[] }> {
+): Promise<{ 
+  figures: HistoricalFigure[]; 
+  events: HistoricalEvent[]; 
+  sites: Site[]; 
+  entities: Entity[];
+  worldName: string;
+  year: number;
+}> {
   
   console.log('Main parser: Starting with file', file.name, file.size);
   
@@ -90,8 +97,12 @@ export async function parseLegendsFile(
     }
   }
   
-  console.log('Main parser: Complete!');
-  return result;
+  // Get world name and year
+  const worldName = parser.worldName || file.name.replace(/\.xml$/i, '');
+  const year = Math.max(...result.events.map(e => e.year).filter(y => y > 0), 0);
+  
+  console.log('Main parser: Complete! World:', worldName, 'Year:', year);
+  return { ...result, worldName, year };
 }
 
 function readChunkAsText(chunk: Blob): Promise<string> {
@@ -114,6 +125,8 @@ class SimpleXmlParser {
   private bytesProcessed = 0;
   private lastProgressUpdate = 0;
   private onProgress: (progress: number, counts: { figures: number; events: number; sites: number; entities: number }) => void;
+  
+  public worldName: string = '';
 
   constructor(totalBytes: number, onProgress: (progress: number, counts: { figures: number; events: number; sites: number; entities: number }) => void) {
     this.totalBytes = totalBytes;
@@ -220,6 +233,12 @@ class SimpleXmlParser {
 
   private handleCloseTag(name: string) {
     const text = this.state.currentText.trim();
+    
+    // Capture world name (top-level name tag before any figures/events)
+    if (name === 'name' && !this.worldName && !this.state.inHistoricalFigure && !this.state.inHistoricalEvent && !this.state.inSite && !this.state.inEntity) {
+      this.worldName = text;
+      return;
+    }
     
     // Parse historical figures
     if (this.state.inHistoricalFigure) {

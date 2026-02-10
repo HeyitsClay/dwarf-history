@@ -113,6 +113,7 @@ export interface WorldMetadata {
   eventCount: number;
   siteCount: number;
   entityCount: number;
+  year: number;
 }
 
 export interface ParsedWorld {

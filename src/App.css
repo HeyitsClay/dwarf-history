@@ -56,12 +56,20 @@ html, body, #root {
 .world-info {
   text-align: center;
   justify-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .world-name {
   font-size: 0.9rem;
   color: var(--text);
   letter-spacing: 1px;
+}
+
+.world-year {
+  font-size: 0.75rem;
+  color: var(--accent);
 }
 
 .header-actions {
@@ -175,9 +183,16 @@ html, body, #root {
 .world-title {
   font-size: 1.5rem;
   color: var(--text);
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
   font-weight: normal;
   letter-spacing: 1px;
+}
+
+.world-year-display {
+  font-size: 1rem;
+  color: var(--accent);
+  letter-spacing: 2px;
+  margin-bottom: 0.75rem;
 }
 
 .year-display {
