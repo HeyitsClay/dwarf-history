@@ -18,7 +18,7 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
   const [artifactHolders, setArtifactHolders] = useState<{ entity: Entity; count: number; percentage: number }[]>([]);
   const [topDeities, setTopDeities] = useState<{ name: string; worshippers: number }[]>([]);
   const [siteTypes, setSiteTypes] = useState<{ type: string; count: number; percentage: number }[]>([]);
-  const [skillsData, setSkillsData] = useState<{ skill: string; count: number; topFigures: { name: string; skillLevel: number }[] }[]>([]);
+  const [skillsData, setSkillsData] = useState<{ category: string; skills: { skill: string; count: number; topFigures: { name: string; skillLevel: number }[] }[] }[]>([]);
   const [loadingStage, setLoadingStage] = useState('Initializing...');
   const [loadingProgress, setLoadingProgress] = useState(0);
 
@@ -208,32 +208,69 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           .slice(0, 6);
         setSiteTypes(siteTypeList);
 
-        // Skills aggregation - collect all figures with skills
+        // Skills aggregation - ALL skills grouped by category
         const figuresWithSkills = allFigures.filter(f => f.hfSkills && f.hfSkills.length > 0);
-        const skillMap = new Map<string, { count: number; figures: { name: string; totalIp: number }[] }>();
+        
+        // Skill category mapping
+        const getSkillCategory = (skill: string): string => {
+          const s = skill.toUpperCase();
+          if (['MINING', 'MASONRY', 'CARPENTRY', 'WOODCRAFT', 'STONECRAFT', 'METALCRAFT', 'BOWYER', 'WEAPONSMITH', 'ARMORSMITH', 'BLACKSMITHING', 'TANNING', 'LEATHERWORK', 'CLOTHESMAKING', 'GLASSMAKER', 'POTTERY', 'BEEKEEPING', 'WAX_WORKING', 'CHEESEMAKING', 'COOKING', 'BREWING', 'MILLING', 'PROCESSPLANTS', 'BUTCHER', 'TRAPPING', 'TANNER', 'LAUNDERING', 'DYER'].includes(s)) return 'Crafting & Production';
+          if (['SWORDSMANSHIP', 'AXEMAN', 'MACEMAN', 'HAMMERMAN', 'SPEARMAN', 'PIKEMAN', 'BOWMAN', 'CROSSBOWMAN', 'WRESTLING', 'BITE', 'GRASP_STRIKE', 'STANCE_STRIKE', 'MELEE_COMBAT', 'RANGED_COMBAT', 'ARMOR_USER', 'SHIELD_USER', 'DODGING', 'THROW', 'SIEGEOPERATE', 'DISCIPLINE', 'LEADERSHIP', 'TEACHING', 'MILITARY_TACTICS'].includes(s)) return 'Combat & Military';
+          if (['DIAGNOSE', 'SURGERY', 'SET_BONE', 'SUTURE', 'DRESS_WOUNDS', 'CRUTCH_WALK'].includes(s)) return 'Medical';
+          if (['WOODCUTTING', 'CARPENTRY', 'DETAILSTONE', 'ENCASEFORTIFICATION', 'CONSOLEFORTIFICATION'].includes(s)) return 'Wood & Stone';
+          if (['FISH', 'CLEAN_FISH', 'DISSECT_FISH', 'FISHING', 'FISH_CLEANING', 'FISH_DISSECTION'].includes(s)) return 'Fishing';
+          if (['SMELT', 'EXTRACT_STRAND', 'FORGE_WEAPON', 'FORGE_ARMOR', 'FORGE_FURNITURE', 'CUTGEM', 'ENCRUSTGEM'].includes(s)) return 'Metal & Gem';
+          if (['GROWING', 'PLANT', 'HERBALISM', 'FARMING', 'FARMING_FIELD', 'MILK', 'SHEARER', 'SPINNING', 'WEAVING', 'PRESSING'].includes(s)) return 'Farming & Agriculture';
+          if (['CONSULT', 'PERSUASION', 'NEGOTIATION', 'JUDGING_INTENT', 'APPRAISAL', 'ORGANIZATION', 'RECORD_KEEPING', 'Lying', 'INTIMIDATION', 'CONVERSATION', 'COMEDY', 'FLATTERY', 'PACIFY', 'CONSOLE'].includes(s)) return 'Social & Administration';
+          if (['KNOWLEDGE', 'STUDENT', 'RESEARCHER', 'CRITICAL_THINKING', 'LOGIC', 'MATHEMATICS', 'ASTRONOMY', 'CHEMISTRY', 'BIOLOGY', 'GEOGRAPHY', 'MEDICAL', 'ENGINEERING'].includes(s)) return 'Knowledge & Science';
+          if (['DESIGNBUILDING', 'ARCHITECTURE', 'OPERATE_PUMP', 'MECHANICS', 'SIEGE_ENGINEERING'].includes(s)) return 'Engineering';
+          if (['WRITING', 'PROSE', 'POETRY', 'READING', 'SPEAKING', 'COMEDY', 'STORYTELLING'].includes(s)) return 'Arts & Literature';
+          if (['MUSIC', 'SINGING', 'DANCING', 'PLAY_KEYBOARD', 'PLAY_STRING', 'PLAY_WIND', 'PLAY_PERCUSSION'].includes(s)) return 'Music & Performance';
+          if (['HUNTING', 'AMBUSH', 'SNEAK', 'ANIMALTRAIN', 'ANIMALCARE', 'RIDING', 'ANIMAL_DISSECT'].includes(s)) return 'Hunting & Animals';
+          if (['CLIMBING', 'SWIMMING', 'SITUATIONAL_AWARENESS', 'KINESIOLOGIC_AWARENESS', 'DIRECTION_SENSE'].includes(s)) return 'Physical';
+          return 'Other';
+        };
+        
+        const skillMap = new Map<string, { count: number; category: string; figures: { name: string; totalIp: number }[] }>();
         
         figuresWithSkills.forEach(f => {
           f.hfSkills?.forEach(s => {
-            const existing = skillMap.get(s.skill) || { count: 0, figures: [] };
+            const category = getSkillCategory(s.skill);
+            const existing = skillMap.get(s.skill) || { count: 0, category, figures: [] };
             existing.count++;
             existing.figures.push({ name: f.name, totalIp: s.totalIp });
             skillMap.set(s.skill, existing);
           });
         });
         
-        // Sort skills by count and get top 3 figures per skill
-        const skillsList = Array.from(skillMap.entries())
-          .map(([skill, data]) => ({
+        // Group by category
+        const categoryMap = new Map<string, { skill: string; count: number; topFigures: { name: string; skillLevel: number }[] }[]>();
+        
+        skillMap.forEach((data, skill) => {
+          const category = data.category;
+          const existing = categoryMap.get(category) || [];
+          existing.push({
             skill,
             count: data.count,
             topFigures: data.figures
               .sort((a, b) => b.totalIp - a.totalIp)
               .slice(0, 3)
               .map(f => ({ name: f.name, skillLevel: Math.floor(f.totalIp / 100) }))
+          });
+          categoryMap.set(category, existing);
+        });
+        
+        // Sort categories and skills within each category
+        const categoryOrder = ['Combat & Military', 'Crafting & Production', 'Medical', 'Social & Administration', 'Knowledge & Science', 'Engineering', 'Farming & Agriculture', 'Hunting & Animals', 'Arts & Literature', 'Music & Performance', 'Fishing', 'Wood & Stone', 'Metal & Gem', 'Physical', 'Other'];
+        
+        const groupedSkills = Array.from(categoryMap.entries())
+          .map(([category, skills]) => ({
+            category,
+            skills: skills.sort((a, b) => b.count - a.count)
           }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 12); // Top 12 skills
-        setSkillsData(skillsList);
+          .sort((a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category));
+        
+        setSkillsData(groupedSkills);
 
         setLoadingProgress(100);
 
@@ -546,7 +583,7 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         )}
       </section>
 
-      {/* Wide Card - Skills */}
+      {/* Wide Card - Skills by Category */}
       {skillsData.length > 0 && (
         <section className="skills-section">
           <div className="skills-card">
@@ -554,23 +591,28 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
               <span className="skills-icon">📜</span>
               <span className="skills-title">Professions & Masters</span>
             </div>
-            <div className="skills-grid">
-              {skillsData.map((skillData, idx) => (
-                <div key={idx} className="skill-column">
-                  <div className="skill-name">{skillData.skill}</div>
-                  <div className="skill-count">{skillData.count} practitioners</div>
-                  <div className="skill-masters">
-                    {skillData.topFigures.map((fig, fidx) => (
-                      <div key={fidx} className="skill-master">
-                        <span className="master-rank">#{fidx + 1}</span>
-                        <span className="master-name">{fig.name}</span>
-                        <span className="master-level">Lv.{fig.skillLevel}</span>
+            {skillsData.map((categoryData, cidx) => (
+              <div key={cidx} className="skill-category">
+                <h4 className="skill-category-title">{categoryData.category}</h4>
+                <div className="skills-grid">
+                  {categoryData.skills.map((skillData, sidx) => (
+                    <div key={sidx} className="skill-column">
+                      <div className="skill-name">{skillData.skill.replace(/_/g, ' ').toLowerCase()}</div>
+                      <div className="skill-count">{skillData.count} practitioners</div>
+                      <div className="skill-masters">
+                        {skillData.topFigures.map((fig, fidx) => (
+                          <div key={fidx} className="skill-master">
+                            <span className="master-rank">#{fidx + 1}</span>
+                            <span className="master-name">{fig.name}</span>
+                            <span className="master-level">Lv.{fig.skillLevel}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </section>
       )}

@@ -775,50 +775,69 @@ html, body, #root {
   letter-spacing: 1px;
 }
 
+/* Skill Category */
+.skill-category {
+  margin-bottom: 2rem;
+}
+
+.skill-category:last-child {
+  margin-bottom: 0;
+}
+
+.skill-category-title {
+  font-size: 0.8rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
 .skills-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
 }
 
 .skill-column {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 1rem;
+  padding: 0.875rem;
 }
 
 .skill-name {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text);
   font-weight: 500;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
   text-transform: capitalize;
 }
 
 .skill-count {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.6rem;
 }
 
 .skill-masters {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.3rem;
 }
 
 .skill-master {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8rem;
+  gap: 0.4rem;
+  font-size: 0.75rem;
 }
 
 .master-rank {
   color: var(--accent);
   font-weight: bold;
-  min-width: 1.5rem;
+  min-width: 1.25rem;
 }
 
 .master-name {
@@ -831,7 +850,7 @@ html, body, #root {
 
 .master-level {
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: 0.65rem;
 }
 
 /* Responsive for skills */
