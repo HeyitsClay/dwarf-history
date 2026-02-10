@@ -40,7 +40,7 @@ export async function parseLegendsFile(
   const parser = new SimpleXmlParser(file.size, onProgress);
   
   // Read file in chunks using FileReader (main thread version)
-  const chunkSize = 2 * 1024 * 1024; // 2MB chunks
+  const chunkSize = 512 * 1024; // 512KB chunks - smaller for large files
   
   for (let offset = 0; offset < file.size; offset += chunkSize) {
     const chunk = file.slice(offset, Math.min(offset + chunkSize, file.size));
@@ -155,34 +155,36 @@ class SimpleXmlParser {
   parseChunk(chunk: string): void {
     this.bytesProcessed += chunk.length;
     
-    // Simple tag parsing
-    const tagRegex = /<(\/?)(\w+)[^>]*>/g;
-    let match;
-    let lastIndex = 0;
-    
-    while ((match = tagRegex.exec(chunk)) !== null) {
-      // Process text before this tag
-      const text = chunk.slice(lastIndex, match.index);
-      if (text) {
-        this.state.currentText += text;
-      }
+    // Process character by character to avoid stack overflow
+    let i = 0;
+    while (i < chunk.length) {
+      const char = chunk[i];
       
-      const isClosing = match[1] === '/';
-      const tagName = match[2];
-      
-      if (isClosing) {
-        this.handleCloseTag(tagName);
+      if (char === '<') {
+        // Start of tag - find end
+        const tagEnd = chunk.indexOf('>', i);
+        if (tagEnd === -1) {
+          // Incomplete tag, save for next chunk
+          this.state.currentText += chunk.slice(i);
+          break;
+        }
+        
+        const tagContent = chunk.slice(i + 1, tagEnd);
+        const isClosing = tagContent[0] === '/';
+        const tagName = isClosing ? tagContent.slice(1).split(/[\s>]/)[0] : tagContent.split(/[\s>]/)[0];
+        
+        if (isClosing) {
+          this.handleCloseTag(tagName);
+        } else {
+          this.handleOpenTag(tagName);
+        }
+        
+        i = tagEnd + 1;
       } else {
-        this.handleOpenTag(tagName);
+        // Regular text content
+        this.state.currentText += char;
+        i++;
       }
-      
-      lastIndex = tagRegex.lastIndex;
-    }
-    
-    // Process remaining text
-    const remainingText = chunk.slice(lastIndex);
-    if (remainingText) {
-      this.state.currentText += remainingText;
     }
     
     // Send progress update every 5%

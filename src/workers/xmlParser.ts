@@ -377,7 +377,7 @@ self.onmessage = async (e: MessageEvent) => {
       const parser = new SimpleXmlParser(file.size);
       
       // Read file in chunks using FileReaderSync (available in workers)
-      const chunkSize = 2 * 1024 * 1024; // 2MB chunks for faster parsing
+      const chunkSize = 512 * 1024; // 512KB chunks - safer for large files
       const reader = new FileReaderSync();
       
       console.log('Worker: Reading file in chunks...');
