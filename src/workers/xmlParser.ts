@@ -390,8 +390,9 @@ self.onmessage = async (e: MessageEvent) => {
       
       const result = parser.finalize();
       
-      // Process kill relationships
-      const figureMap = new Map(result.figures.map(f => [f.id, f]));
+      // Process kill relationships - filter out figures with invalid IDs first
+      const validFigures = result.figures.filter(f => f.id != null && !isNaN(f.id));
+      const figureMap = new Map(validFigures.map(f => [f.id, f]));
       
       // Index deaths and assign kills
       for (const event of result.events) {
@@ -421,9 +422,10 @@ self.onmessage = async (e: MessageEvent) => {
         }
       }
       
-      // Calculate ages for figures
-      const maxYear = Math.max(...result.events.map(e => e.year).filter(y => y > 0), 0);
-      for (const figure of result.figures) {
+      // Calculate ages for figures - use reduce instead of spread to avoid stack overflow
+      const validEvents = result.events.filter(e => e.year != null && !isNaN(e.year) && e.year > 0);
+      const maxYear = validEvents.length > 0 ? validEvents.reduce((max, e) => e.year > max ? e.year : max, 0) : 0;
+      for (const figure of validFigures) {
         if (figure.deathYear > 0) {
           figure.age = figure.deathYear - figure.birthYear;
         } else if (figure.birthYear > 0) {
@@ -431,9 +433,17 @@ self.onmessage = async (e: MessageEvent) => {
         }
       }
       
+      // Filter out entries with invalid IDs before returning
+      const cleanResult = {
+        figures: validFigures,
+        events: result.events.filter(e => e.id != null && !isNaN(e.id)),
+        sites: result.sites.filter(s => s.id != null && !isNaN(s.id)),
+        entities: result.entities.filter(en => en.id != null && !isNaN(en.id)),
+      };
+      
       self.postMessage({
         type: 'complete',
-        data: result,
+        data: cleanResult,
       });
     } catch (error) {
       self.postMessage({

@@ -56,9 +56,10 @@ export async function parseLegendsFile(
   console.log('Main parser: File read complete');
   const result = parser.finalize();
   
-  // Process kill relationships
+  // Process kill relationships - filter out figures with invalid IDs first
   console.log('Main parser: Processing kills...');
-  const figureMap = new Map(result.figures.map(f => [f.id, f]));
+  const validFigures = result.figures.filter(f => f.id != null && !isNaN(f.id));
+  const figureMap = new Map(validFigures.map(f => [f.id, f]));
   
   for (const event of result.events) {
     if (event.type === 'hf died' && event.slayerHfid && event.slayerHfid !== -1) {
@@ -87,9 +88,10 @@ export async function parseLegendsFile(
     }
   }
   
-  // Calculate ages
-  const maxYear = Math.max(...result.events.map(e => e.year).filter(y => y > 0), 0);
-  for (const figure of result.figures) {
+  // Calculate ages - use reduce instead of spread to avoid stack overflow
+  const validEvents = result.events.filter(e => e.year != null && !isNaN(e.year) && e.year > 0);
+  const maxYear = validEvents.length > 0 ? validEvents.reduce((max, e) => e.year > max ? e.year : max, 0) : 0;
+  for (const figure of validFigures) {
     if (figure.deathYear > 0) {
       figure.age = figure.deathYear - figure.birthYear;
     } else if (figure.birthYear > 0) {
@@ -101,8 +103,16 @@ export async function parseLegendsFile(
   const worldName = parser.worldName || file.name.replace(/\.xml$/i, '');
   const year = Math.max(...result.events.map(e => e.year).filter(y => y > 0), 0);
   
+  // Filter out entries with invalid IDs before returning
+  const cleanResult = {
+    figures: validFigures,
+    events: result.events.filter(e => e.id != null && !isNaN(e.id)),
+    sites: result.sites.filter(s => s.id != null && !isNaN(s.id)),
+    entities: result.entities.filter(en => en.id != null && !isNaN(en.id)),
+  };
+  
   console.log('Main parser: Complete! World:', worldName, 'Year:', year);
-  return { ...result, worldName, year };
+  return { ...cleanResult, worldName, year };
 }
 
 function readChunkAsText(chunk: Blob): Promise<string> {
