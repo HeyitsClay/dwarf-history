@@ -592,8 +592,9 @@ html, body, #root {
 .legend-stats {
   display: flex;
   justify-content: center;
-  gap: 1.5rem;
+  gap: 1.25rem;
   margin: 1rem 0;
+  flex-wrap: wrap;
 }
 
 .civ-stat {
@@ -804,27 +805,37 @@ html, body, #root {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 0.875rem;
+  padding: 0;
+  overflow: hidden;
+}
+
+.skill-header {
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 0.875rem;
+  margin-bottom: 0.5rem;
 }
 
 .skill-name {
-  font-size: 0.85rem;
-  color: var(--text);
-  font-weight: 500;
-  margin-bottom: 0.2rem;
+  font-size: 0.9rem;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 0.15rem;
   text-transform: capitalize;
+  letter-spacing: 0.3px;
 }
 
 .skill-count {
   font-size: 0.7rem;
   color: var(--text-muted);
-  margin-bottom: 0.6rem;
+  font-weight: 400;
 }
 
 .skill-masters {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  padding: 0 0.875rem 0.875rem;
 }
 
 .skill-master {
