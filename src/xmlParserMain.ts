@@ -101,7 +101,8 @@ export async function parseLegendsFile(
   
   // Get world name and year
   const worldName = parser.worldName || file.name.replace(/\.xml$/i, '');
-  const year = Math.max(...result.events.map(e => e.year).filter(y => y > 0), 0);
+  const validYears = result.events.filter(e => e.year != null && !isNaN(e.year) && e.year > 0).map(e => e.year);
+  const year = validYears.length > 0 ? validYears.reduce((max, y) => y > max ? y : max, 0) : 0;
   
   // Filter out entries with invalid IDs before returning
   const cleanResult = {
@@ -165,36 +166,50 @@ class SimpleXmlParser {
   parseChunk(chunk: string): void {
     this.bytesProcessed += chunk.length;
     
-    // Process character by character to avoid stack overflow
-    let i = 0;
-    while (i < chunk.length) {
-      const char = chunk[i];
+    // Fast tag parsing using indexOf instead of regex
+    let pos = 0;
+    while (pos < chunk.length) {
+      const tagStart = chunk.indexOf('<', pos);
       
-      if (char === '<') {
-        // Start of tag - find end
-        const tagEnd = chunk.indexOf('>', i);
-        if (tagEnd === -1) {
-          // Incomplete tag, save for next chunk
-          this.state.currentText += chunk.slice(i);
-          break;
-        }
-        
-        const tagContent = chunk.slice(i + 1, tagEnd);
-        const isClosing = tagContent[0] === '/';
-        const tagName = isClosing ? tagContent.slice(1).split(/[\s>]/)[0] : tagContent.split(/[\s>]/)[0];
-        
-        if (isClosing) {
-          this.handleCloseTag(tagName);
-        } else {
-          this.handleOpenTag(tagName);
-        }
-        
-        i = tagEnd + 1;
-      } else {
-        // Regular text content
-        this.state.currentText += char;
-        i++;
+      if (tagStart === -1) {
+        // No more tags, save remaining text
+        this.state.currentText += chunk.slice(pos);
+        break;
       }
+      
+      // Save text before tag
+      if (tagStart > pos) {
+        this.state.currentText += chunk.slice(pos, tagStart);
+      }
+      
+      const tagEnd = chunk.indexOf('>', tagStart);
+      if (tagEnd === -1) {
+        // Incomplete tag, save for next chunk
+        this.state.currentText += chunk.slice(tagStart);
+        break;
+      }
+      
+      // Parse tag content
+      const tagContent = chunk.slice(tagStart + 1, tagEnd);
+      const isClosing = tagContent.charCodeAt(0) === 47; // '/'
+      
+      // Extract tag name (stop at first whitespace or />)
+      let tagName = '';
+      let nameEnd = isClosing ? 1 : 0;
+      while (nameEnd < tagContent.length) {
+        const c = tagContent.charCodeAt(nameEnd);
+        if (c === 32 || c === 9 || c === 10 || c === 13 || c === 47) break; // whitespace or /
+        tagName += tagContent[nameEnd];
+        nameEnd++;
+      }
+      
+      if (isClosing) {
+        this.handleCloseTag(tagName);
+      } else {
+        this.handleOpenTag(tagName);
+      }
+      
+      pos = tagEnd + 1;
     }
     
     // Send progress update every 5%
