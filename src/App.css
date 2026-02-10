@@ -56,6 +56,13 @@ html, body, #root {
   font-size: 0.85rem;
   color: var(--text-muted);
   margin-bottom: 0.25rem;
+  display: block;
+}
+
+.world-stats {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
 
 .header-actions {
@@ -154,10 +161,18 @@ html, body, #root {
   padding: 2rem 1.5rem;
 }
 
-/* Year Section */
-.year-section {
+/* World Header */
+.world-header {
   text-align: center;
   margin-bottom: 2rem;
+}
+
+.world-title {
+  font-size: 1.5rem;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+  font-weight: normal;
+  letter-spacing: 1px;
 }
 
 .year-display {
@@ -175,9 +190,9 @@ html, body, #root {
 }
 
 .year-value {
-  font-size: 3.5rem;
+  font-size: 3rem;
   font-weight: normal;
-  color: var(--text);
+  color: var(--accent);
   letter-spacing: -2px;
   line-height: 1;
 }
@@ -303,9 +318,19 @@ html, body, #root {
   color: var(--text-muted);
 }
 
-/* Population Sections */
-.population-section {
+/* Stats Grid Side by Side */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
   margin-bottom: 2rem;
+}
+
+.stats-column {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
 }
 
 .section-header {
@@ -313,64 +338,65 @@ html, body, #root {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 2px;
-  margin-bottom: 1rem;
-  padding-left: 0.25rem;
+  margin-bottom: 1.25rem;
+  text-align: center;
 }
 
-.population-bars {
+.stats-bars {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
-.pop-bar {
+.stat-bar {
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-rows: auto auto;
   gap: 0.5rem 1rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.875rem 1rem;
 }
 
-.pop-label {
+.stat-label-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.pop-name {
+.stat-name {
   font-weight: normal;
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
-.pop-count {
+.stat-value {
   color: var(--text-muted);
   font-size: 0.85rem;
 }
 
-.pop-track {
+.stat-value.kill {
+  color: var(--red);
+  font-weight: bold;
+}
+
+.stat-track {
   grid-column: 1 / -1;
-  height: 6px;
+  height: 4px;
   background: var(--bg);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
 }
 
-.pop-fill {
+.stat-fill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: 2px;
   transition: width 0.5s ease;
   min-width: 2px;
 }
 
-.pop-percent {
+.stat-percent {
   grid-column: 2;
   grid-row: 1;
-  font-size: 0.85rem;
-  color: var(--accent);
+  font-size: 0.8rem;
+  color: var(--text-muted);
   font-weight: normal;
 }
 
@@ -503,8 +529,17 @@ html, body, #root {
     padding: 1.5rem 1rem;
   }
 
+  .world-title {
+    font-size: 1.1rem;
+  }
+
   .year-value {
-    font-size: 2.5rem;
+    font-size: 2rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 
   .count-grid {

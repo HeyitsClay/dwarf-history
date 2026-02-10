@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '../db/database';
-import type { HistoricalFigure, WorldMetadata, Entity } from '../types';
+import type { HistoricalFigure, Entity } from '../types';
 
 interface OverviewProps {
   onViewFigures: () => void;
@@ -9,13 +9,13 @@ interface OverviewProps {
 }
 
 export const Overview = ({ onNewWorld }: OverviewProps) => {
-  const [, setMetadata] = useState<WorldMetadata | null>(null);
+  const [worldName, setWorldName] = useState<string>('');
   const [currentYear, setCurrentYear] = useState(0);
   const [livingCount, setLivingCount] = useState(0);
   const [totalDeaths, setTotalDeaths] = useState(0);
   const [topKiller, setTopKiller] = useState<HistoricalFigure | null>(null);
   const [strongestCiv, setStrongestCiv] = useState<Entity | null>(null);
-  const [raceStats, setRaceStats] = useState<{ race: string; count: number; living: number; category: 'civilized' | 'monster' | 'animal' | 'other' }[]>([]);
+  const [raceStats, setRaceStats] = useState<{ race: string; count: number; living: number; kills: number; category: 'civilized' | 'monster' | 'animal' | 'other' }[]>([]);
   const [loadingStage, setLoadingStage] = useState('Initializing...');
   const [loadingProgress, setLoadingProgress] = useState(0);
 
@@ -28,7 +28,7 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         setLoadingProgress(10);
         const meta = await db.getMetadata();
         if (isCancelled) return;
-        setMetadata(meta || null);
+        setWorldName(meta?.name || 'Unknown World');
 
         setLoadingStage('Loading figures...');
         setLoadingProgress(30);
@@ -92,22 +92,24 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           return 'other';
         };
 
-        const raceMap = new Map<string, { count: number; living: number; category: 'civilized' | 'monster' | 'animal' | 'other' }>();
+        // Track stats and kills per race
+        const raceMap = new Map<string, { count: number; living: number; kills: number; category: 'civilized' | 'monster' | 'animal' | 'other' }>();
         
         allFigures.forEach(f => {
-          if (!f.race) return; // Skip figures without race
-          const current = raceMap.get(f.race) || { count: 0, living: 0, category: getCategory(f.race) };
+          if (!f.race) return;
+          const current = raceMap.get(f.race) || { count: 0, living: 0, kills: 0, category: getCategory(f.race) };
           current.count++;
           if (f.deathYear <= 0) current.living++;
+          current.kills += f.kills?.length || 0;
           raceMap.set(f.race, current);
         });
         
         // Aggregate by category
         const civilizedRaceList = ['DWARF', 'HUMAN', 'ELF', 'GOBLIN'];
-        let monsterTotal = { race: 'Monsters', count: 0, living: 0, category: 'civilized' as const };
-        let wildlifeTotal = { race: 'Wildlife', count: 0, living: 0, category: 'civilized' as const };
+        let monsterTotal = { race: 'Monsters', count: 0, living: 0, kills: 0, category: 'civilized' as const };
+        let wildlifeTotal = { race: 'Wildlife', count: 0, living: 0, kills: 0, category: 'civilized' as const };
         
-        const raceList: { race: string; count: number; living: number; category: 'civilized' | 'monster' | 'animal' | 'other' }[] = [];
+        const raceList: { race: string; count: number; living: number; kills: number; category: 'civilized' | 'monster' | 'animal' | 'other' }[] = [];
         
         raceMap.forEach((data, raceName) => {
           if (civilizedRaceList.includes(raceName)) {
@@ -115,9 +117,11 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           } else if (data.category === 'monster') {
             monsterTotal.count += data.count;
             monsterTotal.living += data.living;
+            monsterTotal.kills += data.kills;
           } else if (data.category === 'animal') {
             wildlifeTotal.count += data.count;
             wildlifeTotal.living += data.living;
+            wildlifeTotal.kills += data.kills;
           }
         });
         
@@ -177,8 +181,9 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
 
   return (
     <div className="overview-dashboard">
-      {/* World Year */}
-      <section className="year-section">
+      {/* World Name & Year */}
+      <section className="world-header">
+        <h1 className="world-title">{worldName}</h1>
         <div className="year-display">
           <span className="year-label">Year</span>
           <span className="year-value">{currentYear.toLocaleString()}</span>
@@ -236,40 +241,75 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         )}
       </section>
 
-      {/* Population */}
+      {/* Population & Kills Side by Side */}
       {racePercentages.length > 0 && (
-        <section className="population-section">
-          <h3 className="section-header">Population</h3>
-          <div className="population-bars">
-            {racePercentages.map(({ race, living, percentage }) => {
-              // Determine color based on race type
-              let color = '#6b6b6b'; // default gray
-              if (race === 'DWARF') color = '#d4a373';
-              else if (race === 'HUMAN') color = '#2a9d8f';
-              else if (race === 'ELF') color = '#e9c46a';
-              else if (race === 'GOBLIN') color = '#e76f51';
-              else if (race === 'Monsters') color = '#9b2226';
-              else if (race === 'Wildlife') color = '#6b6b6b';
-              
-              return (
-                <div key={race} className="pop-bar">
-                  <div className="pop-label">
-                    <span className="pop-name">{race}</span>
-                    <span className="pop-count">{living.toLocaleString()}</span>
+        <section className="stats-grid">
+          {/* Population Column */}
+          <div className="stats-column">
+            <h3 className="section-header">Population</h3>
+            <div className="stats-bars">
+              {racePercentages.map(({ race, living, percentage }) => {
+                let color = '#6b6b6b';
+                if (race === 'DWARF') color = '#d4a373';
+                else if (race === 'HUMAN') color = '#2a9d8f';
+                else if (race === 'ELF') color = '#e9c46a';
+                else if (race === 'GOBLIN') color = '#e76f51';
+                else if (race === 'Monsters') color = '#9b2226';
+                else if (race === 'Wildlife') color = '#6b6b6b';
+                
+                return (
+                  <div key={`pop-${race}`} className="stat-bar">
+                    <div className="stat-label-row">
+                      <span className="stat-name">{race}</span>
+                      <span className="stat-value">{living.toLocaleString()}</span>
+                    </div>
+                    <div className="stat-track">
+                      <div 
+                        className="stat-fill"
+                        style={{ width: `${Math.max(percentage, 1)}%`, backgroundColor: color }}
+                      />
+                    </div>
+                    <span className="stat-percent">{percentage.toFixed(1)}%</span>
                   </div>
-                  <div className="pop-track">
-                    <div 
-                      className="pop-fill"
-                      style={{ 
-                        width: `${Math.max(percentage, 1)}%`,
-                        backgroundColor: color
-                      }}
-                    />
-                  </div>
-                  <span className="pop-percent">{percentage.toFixed(1)}%</span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Kills Column */}
+          <div className="stats-column">
+            <h3 className="section-header">Kills Recorded</h3>
+            <div className="stats-bars">
+              {(() => {
+                const totalKills = racePercentages.reduce((sum, r) => sum + r.kills, 0);
+                return racePercentages.map(({ race, kills }) => {
+                  const killPercent = totalKills > 0 ? (kills / totalKills) * 100 : 0;
+                  let color = '#6b6b6b';
+                  if (race === 'DWARF') color = '#d4a373';
+                  else if (race === 'HUMAN') color = '#2a9d8f';
+                  else if (race === 'ELF') color = '#e9c46a';
+                  else if (race === 'GOBLIN') color = '#e76f51';
+                  else if (race === 'Monsters') color = '#9b2226';
+                  else if (race === 'Wildlife') color = '#6b6b6b';
+                  
+                  return (
+                    <div key={`kill-${race}`} className="stat-bar">
+                      <div className="stat-label-row">
+                        <span className="stat-name">{race}</span>
+                        <span className="stat-value kill">{kills.toLocaleString()}</span>
+                      </div>
+                      <div className="stat-track">
+                        <div 
+                          className="stat-fill"
+                          style={{ width: `${Math.max(killPercent, 1)}%`, backgroundColor: color }}
+                        />
+                      </div>
+                      <span className="stat-percent">{killPercent.toFixed(1)}%</span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
           </div>
         </section>
       )}
