@@ -62,32 +62,35 @@ class SimpleXmlParser {
   parseChunk(chunk: string): void {
     this.bytesProcessed += chunk.length;
     
-    // Simple tag parsing
-    const tagRegex = /<(\/?)(\w+)[^>]*>/g;
-    const textBetweenTags = chunk.split(tagRegex);
-    
-    // Process each part
+    // Process character by character to avoid stack overflow with large files
     let i = 0;
-    while (i < textBetweenTags.length) {
-      const text = textBetweenTags[i];
-      if (text) {
-        this.state.currentText += text;
-      }
+    while (i < chunk.length) {
+      const char = chunk[i];
       
-      i++;
-      if (i >= textBetweenTags.length) break;
-      
-      const isClosing = textBetweenTags[i] === '/';
-      i++;
-      if (i >= textBetweenTags.length) break;
-      
-      const tagName = textBetweenTags[i];
-      i++;
-      
-      if (isClosing) {
-        this.handleCloseTag(tagName);
+      if (char === '<') {
+        // Start of tag - process accumulated text first
+        const tagEnd = chunk.indexOf('>', i);
+        if (tagEnd === -1) {
+          // Incomplete tag, save for next chunk
+          this.state.currentText += chunk.slice(i);
+          break;
+        }
+        
+        const tagContent = chunk.slice(i + 1, tagEnd);
+        const isClosing = tagContent[0] === '/';
+        const tagName = isClosing ? tagContent.slice(1).split(/\s/)[0] : tagContent.split(/\s/)[0];
+        
+        if (isClosing) {
+          this.handleCloseTag(tagName);
+        } else {
+          this.handleOpenTag(tagName);
+        }
+        
+        i = tagEnd + 1;
       } else {
-        this.handleOpenTag(tagName);
+        // Regular text content
+        this.state.currentText += char;
+        i++;
       }
     }
     
