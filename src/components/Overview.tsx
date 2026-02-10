@@ -17,6 +17,8 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
   const [raceStats, setRaceStats] = useState<{ race: string; count: number; living: number; kills: number; deaths: number; category: 'civilized' | 'monster' | 'animal' | 'other' }[]>([]);
   const [artifactHolders, setArtifactHolders] = useState<{ entity: Entity; count: number; percentage: number }[]>([]);
   const [topDeities, setTopDeities] = useState<{ name: string; worshippers: number }[]>([]);
+  const [siteTypes, setSiteTypes] = useState<{ type: string; count: number; percentage: number }[]>([]);
+  const [skillsData, setSkillsData] = useState<{ skill: string; count: number; topFigures: { name: string; skillLevel: number }[] }[]>([]);
   const [loadingStage, setLoadingStage] = useState('Initializing...');
   const [loadingProgress, setLoadingProgress] = useState(0);
 
@@ -191,6 +193,48 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         if (wildlifeTotal.count > 0) raceList.push(wildlifeTotal);
         
         setRaceStats(raceList);
+
+        // Site types aggregation
+        const allSites = await db.sites.toArray();
+        const siteTypeMap = new Map<string, number>();
+        allSites.forEach(s => {
+          const type = s.type || 'Unknown';
+          siteTypeMap.set(type, (siteTypeMap.get(type) || 0) + 1);
+        });
+        const totalSites = allSites.length;
+        const siteTypeList = Array.from(siteTypeMap.entries())
+          .map(([type, count]) => ({ type, count, percentage: totalSites > 0 ? (count / totalSites) * 100 : 0 }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 6);
+        setSiteTypes(siteTypeList);
+
+        // Skills aggregation - collect all figures with skills
+        const figuresWithSkills = allFigures.filter(f => f.hfSkills && f.hfSkills.length > 0);
+        const skillMap = new Map<string, { count: number; figures: { name: string; totalIp: number }[] }>();
+        
+        figuresWithSkills.forEach(f => {
+          f.hfSkills?.forEach(s => {
+            const existing = skillMap.get(s.skill) || { count: 0, figures: [] };
+            existing.count++;
+            existing.figures.push({ name: f.name, totalIp: s.totalIp });
+            skillMap.set(s.skill, existing);
+          });
+        });
+        
+        // Sort skills by count and get top 3 figures per skill
+        const skillsList = Array.from(skillMap.entries())
+          .map(([skill, data]) => ({
+            skill,
+            count: data.count,
+            topFigures: data.figures
+              .sort((a, b) => b.totalIp - a.totalIp)
+              .slice(0, 3)
+              .map(f => ({ name: f.name, skillLevel: Math.floor(f.totalIp / 100) }))
+          }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 12); // Top 12 skills
+        setSkillsData(skillsList);
+
         setLoadingProgress(100);
 
       } catch (err) {
@@ -416,7 +460,7 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         </section>
       )}
 
-      {/* New Row - Artifacts & Deities */}
+      {/* Row 1 - Artifacts & Site Types */}
       <section className="info-row">
         {/* Artifact Holders */}
         {artifactHolders.length > 0 && (
@@ -449,6 +493,40 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           </div>
         )}
 
+        {/* Site Types */}
+        {siteTypes.length > 0 && (
+          <div className="info-card">
+            <div className="info-header">
+              <span className="info-icon">🏰</span>
+              <span className="info-title">Site Types</span>
+            </div>
+            <div className="info-bars">
+              {siteTypes.map((site, idx) => {
+                const colors = ['#d4a373', '#2a9d8f', '#e9c46a', '#e76f51', '#9b2226', '#6b6b6b'];
+                const color = colors[idx % colors.length];
+                return (
+                  <div key={idx} className="info-bar">
+                    <div className="info-bar-row">
+                      <span className="info-bar-name">{site.type}</span>
+                      <span className="info-bar-value">{site.count}</span>
+                    </div>
+                    <div className="info-bar-track">
+                      <div 
+                        className="info-bar-fill"
+                        style={{ width: `${Math.max(site.percentage, 1)}%`, backgroundColor: color }}
+                      />
+                    </div>
+                    <span className="info-bar-percent">{site.percentage.toFixed(1)}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Row 2 - Deities & (placeholder for future card) */}
+      <section className="info-row">
         {/* Top Deities */}
         {topDeities.length > 0 && (
           <div className="info-card">
@@ -467,6 +545,35 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           </div>
         )}
       </section>
+
+      {/* Wide Card - Skills */}
+      {skillsData.length > 0 && (
+        <section className="skills-section">
+          <div className="skills-card">
+            <div className="skills-header">
+              <span className="skills-icon">📜</span>
+              <span className="skills-title">Professions & Masters</span>
+            </div>
+            <div className="skills-grid">
+              {skillsData.map((skillData, idx) => (
+                <div key={idx} className="skill-column">
+                  <div className="skill-name">{skillData.skill}</div>
+                  <div className="skill-count">{skillData.count} practitioners</div>
+                  <div className="skill-masters">
+                    {skillData.topFigures.map((fig, fidx) => (
+                      <div key={fidx} className="skill-master">
+                        <span className="master-rank">#{fidx + 1}</span>
+                        <span className="master-name">{fig.name}</span>
+                        <span className="master-level">Lv.{fig.skillLevel}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Action */}
       <section className="action-section">

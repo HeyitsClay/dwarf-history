@@ -743,3 +743,100 @@ html, body, #root {
     gap: 1rem;
   }
 }
+/* Skills Section - Wide Card */
+.skills-section {
+  margin-bottom: 2rem;
+}
+
+.skills-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.skills-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.skills-icon {
+  font-size: 1.1rem;
+}
+
+.skills-title {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.skill-column {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.skill-name {
+  font-size: 0.9rem;
+  color: var(--text);
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  text-transform: capitalize;
+}
+
+.skill-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.skill-masters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.skill-master {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.master-rank {
+  color: var(--accent);
+  font-weight: bold;
+  min-width: 1.5rem;
+}
+
+.master-name {
+  color: var(--text);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.master-level {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+/* Responsive for skills */
+@media (max-width: 600px) {
+  .skills-grid {
+    grid-template-columns: 1fr;
+  }
+}
