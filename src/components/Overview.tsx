@@ -8,6 +8,35 @@ interface OverviewProps {
   onNewWorld: () => void;
 }
 
+// Get the legendary title for the best master of each category
+const getCategoryBestTitle = (category: string): string => {
+  const titles: Record<string, string> = {
+    'Warfare': 'Warlord',
+    'Metalworking': 'Master Smith',
+    'Craftsmanship': 'Artisan Supreme',
+    'Construction': 'High Builder',
+    'Healing': 'Grand Healer',
+    'Agriculture': 'Harvest Sovereign',
+    'Animal Arts': 'Beastmaster',
+    'Woodsmanship': 'Forest King',
+    'Fishing': 'Lord of Waters',
+    'Commerce': 'Trade Prince',
+    'Social Arts': 'Grand Diplomat',
+    'Scholarship': 'Sage',
+    'Records & Lore': 'Loremaster',
+    'Performance': 'Legendary Performer',
+    'Athletics': 'Champion',
+    'Industry': 'Production Chief',
+    'Service': 'Master Servant',
+    'Survival': 'Wilderness Guide',
+    'Subterfuge': 'Shadow Master',
+    'Mental Discipline': 'Mind Sage',
+    'Supernatural': 'Mystic',
+    'Miscellaneous': 'Jack of All Trades'
+  };
+  return titles[category] || 'Master';
+};
+
 export const Overview = ({ onNewWorld }: OverviewProps) => {
   const [year, setYear] = useState<number>(0);
   const [livingCount, setLivingCount] = useState(0);
@@ -255,9 +284,31 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           if (['CLIMBING', 'CLIMBER', 'SWIMMING', 'SWIMMER', 'THROW', 'THROWING', 'BALANCE', 'COORDINATION', 'SITUATIONAL_AWARENESS', 'KINESIOLOGIC_AWARENESS', 'DIRECTION_SENSE', 'ATHLETICS', 'FITNESS', 'RUNNING', 'JUMPING'].includes(s)) return 'Athletics';
           
           // SERVICE - Cleaning, laundry, low-skill labor
-          if (['LAUNDERING', 'CLEANING', 'HAULING', 'SERVANT', 'PEASANT', 'LABOR', 'FOOD_PREP', 'PREPARE_FOOD'].includes(s)) return 'Service';
+          if (['LAUNDERING', 'CLEANING', 'HAULING', 'SERVANT', 'PEASANT', 'LABOR', 'FOOD_PREP', 'PREPARE_FOOD', 'PLANT_GATHERING', 'FOOD_PRODUCTION', 'FOOD_PROCESSING', 'PROCESS_FOOD'].includes(s)) return 'Service';
           
-          return 'Other';
+          // WOODSMANSHIP - Wood cutting, forestry, nature gathering
+          if (['WOODCUTTING', 'WOOD_CUTTING', 'CARPENTRY', 'FORESTRY', 'LUMBER', 'LUMBERJACK', 'WOODSMAN', 'CARTOGRAPHY', 'NAVIGATION'].includes(s)) return 'Woodsmanship';
+          
+          // INDUSTRY - Chemical production, materials processing
+          if (['SOAP_MAKING', 'LYE_MAKING', 'POTASH_MAKING', 'ASH_PRODUCTION', 'RENDER_FAT', 'GLAZING', 'POTASH', 'LYE', 'SOAP', 'RENDERING', 'ASH', 'FIRE_MAKING', 'FIRE Starting'].includes(s)) return 'Industry';
+          
+          // SUBTERFUGE - Stealth, theft, trickery
+          if (['LOCKPICKING', 'PICKPOCKET', 'STEALING', 'STEALTH', 'DISGUISE', 'POISON', 'POISONING', 'TRAPS', 'TRAP_ENGINEERING'].includes(s)) return 'Subterfuge';
+          
+          // COMMERCE - Trading, appraisal, valuation
+          if (['TRADE', 'TRADING', 'MERCHANT', 'BARGAINING', 'EVALUATE_GOOD', 'EVALUATE_GOODS', 'APPRAISAL', 'PRICE', 'VALUE', 'COMMERCE', 'BUSINESS', 'PROFIT'].includes(s)) return 'Commerce';
+          
+          // SURVIVAL - Wilderness, primitive skills
+          if (['KNAPPING', 'BONE_CARVE', 'BONE_CARVING', 'FORAGE', 'FORAGING', 'WILDERNESS', 'SURVIVAL', 'CAMPING', 'SHELTER', 'FIRE_BUILDING', 'PRIMITIVE'].includes(s)) return 'Survival';
+          
+          // MENTAL - Memory, willpower, focus
+          if (['MEMORY', 'WILLPOWER', 'FOCUS', 'CONCENTRATION', 'PATIENCE', 'DISCIPLINE', 'MEDITATION', 'MIND', 'MENTAL', 'PSYCHIC', 'INTUITION'].includes(s)) return 'Mental Discipline';
+          
+          // SUPERNATURAL - Magic, divine, weird stuff
+          if (['MAGIC', 'SPELL', 'RITUAL', 'NECROMANCY', 'DIVINATION', 'PROPHECY', 'CURSE', 'BLESSING', 'COMMUNE', 'SPIRIT', 'GHOST', 'UNDEAD', 'VAMPIRE', 'WEREWOLF', 'LYCANTHROPY', 'POSSESSION', 'EXORCISM'].includes(s)) return 'Supernatural';
+          
+          // MISCELLANEOUS - Anything that doesn't fit elsewhere
+          return 'Miscellaneous';
         };
         
         // Track skill data per category and per figure for best master calculation
@@ -319,7 +370,7 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
         });
         
         // Sort categories and skills within each category
-        const categoryOrder = ['Warfare', 'Metalworking', 'Craftsmanship', 'Construction', 'Healing', 'Agriculture', 'Animal Arts', 'Fishing', 'Social Arts', 'Scholarship', 'Records & Lore', 'Performance', 'Athletics', 'Service', 'Other'];
+        const categoryOrder = ['Warfare', 'Metalworking', 'Craftsmanship', 'Construction', 'Healing', 'Agriculture', 'Animal Arts', 'Woodsmanship', 'Fishing', 'Commerce', 'Social Arts', 'Scholarship', 'Records & Lore', 'Performance', 'Athletics', 'Industry', 'Service', 'Survival', 'Subterfuge', 'Mental Discipline', 'Supernatural', 'Miscellaneous'];
         
         const groupedSkills = Array.from(categoryMap.entries())
           .map(([category, skills]) => ({
@@ -660,9 +711,12 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
                   <h4 className="skill-category-title">{categoryData.category}</h4>
                   {categoryData.bestMaster && (
                     <div className="category-best-master">
-                      <span className="best-master-label">Best {categoryData.category === 'Service' ? 'Servant' : categoryData.category === 'Records & Lore' ? 'Loremaster' : categoryData.category === 'Animal Arts' ? 'Beastmaster' : categoryData.category.slice(0, -1)}</span>
-                      <span className="best-master-name">{categoryData.bestMaster.name}</span>
-                      <span className="best-master-total">{Math.floor(categoryData.bestMaster.totalIp / 100)} total</span>
+                      <span className="best-master-crown">👑</span>
+                      <div className="best-master-info">
+                        <span className="best-master-title">{getCategoryBestTitle(categoryData.category)}</span>
+                        <span className="best-master-name">{categoryData.bestMaster.name}</span>
+                      </div>
+                      <span className="best-master-level">{Math.floor(categoryData.bestMaster.totalIp / 100)}</span>
                     </div>
                   )}
                 </div>
