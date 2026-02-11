@@ -7,6 +7,7 @@ interface ParserState {
   inSite: boolean;
   inEntity: boolean;
   inArtifact: boolean;
+  inArtifactItem: boolean;  // <item> inside <artifact>
   inArtifactLink: boolean;
   inWrittenContent: boolean;
   inEntityLink: boolean;
@@ -166,6 +167,7 @@ class SimpleXmlParser {
       inSite: false,
       inEntity: false,
       inArtifact: false,
+      inArtifactItem: false,
       inArtifactLink: false,
       inWrittenContent: false,
       inEntityLink: false,
@@ -269,6 +271,11 @@ class SimpleXmlParser {
       case 'artifact':
         this.state.inArtifact = true;
         this.state.currentArtifact = {};
+        break;
+      case 'item':
+        if (this.state.inArtifact) {
+          this.state.inArtifactItem = true;
+        }
         break;
       case 'written_content':
         this.state.inWrittenContent = true;
@@ -536,14 +543,23 @@ class SimpleXmlParser {
       }
     }
 
-    // Parse artifacts - SIMPLIFIED
+    // Parse artifacts
     if (this.state.inArtifact) {
       switch (name) {
         case 'id':
           this.state.currentArtifact.id = parseInt(text, 10);
           break;
         case 'name':
-          this.state.currentArtifact.name = text;
+          // Top-level artifact name (not inside item)
+          if (!this.state.inArtifactItem) {
+            this.state.currentArtifact.name = text;
+          }
+          break;
+        case 'name_string':
+          // Item name inside <item> element - use as artifact name if no top-level name
+          if (this.state.inArtifactItem) {
+            this.state.currentArtifact.name = text;
+          }
           break;
         case 'item_type':
           this.state.currentArtifact.itemType = text;
@@ -563,6 +579,9 @@ class SimpleXmlParser {
         case 'site_id':
           this.state.currentArtifact.siteId = parseInt(text, 10);
           break;
+        case 'subregion_id':
+          this.state.currentArtifact.subregionId = parseInt(text, 10);
+          break;
         case 'entity_id':
           this.state.currentArtifact.entityId = parseInt(text, 10);
           break;
@@ -575,6 +594,11 @@ class SimpleXmlParser {
         case 'slain_beast_name':
           this.state.currentArtifact.slainBeastName = text;
           break;
+        case 'page_written_content_id':
+        case 'writing_written_content_id':
+          this.state.currentArtifact.writtenContentId = parseInt(text, 10);
+          this.state.currentArtifact.isWrittenContent = true;
+          break;
         case 'written_content_id':
           const wcId = parseInt(text, 10);
           const wc = this.writtenContents.get(wcId);
@@ -582,6 +606,11 @@ class SimpleXmlParser {
             this.state.currentArtifact.isWrittenContent = true;
             this.state.currentArtifact.writtenContentType = wc.type;
             this.state.currentArtifact.writtenContentTitle = wc.title;
+          }
+          break;
+        case 'item':
+          if (this.state.inArtifact) {
+            this.state.inArtifactItem = false;
           }
           break;
         case 'artifact':
