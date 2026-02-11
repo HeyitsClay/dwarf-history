@@ -95,36 +95,27 @@ const ArtifactsCard = () => {
       try {
         const allArtifacts = await db.artifacts.toArray();
         
-        // Categorize artifacts
-        // "Created" = any artifact with a valid creator_hf_id (> 0, not -1, not undefined)
-        const created = allArtifacts.filter(a => a.creatorHfid && a.creatorHfid > 0).length;
+        // Categorize artifacts based on actual XML structure
+        // "Created" = artifacts with a proper name (not just raw materials like "primal metal")
+        const created = allArtifacts.filter(a => a.name && a.name.length > 0).length;
         
-        // Heroic = explicitly named after slaying OR name suggests it
+        // Heroic = name suggests slaying/killing
         const heroic = allArtifacts.filter(a => {
-          if (a.isNamedAfterSlaying === true) return true;
           const name = a.name?.toLowerCase() || '';
-          return name.includes('slay') || name.includes('killer') || name.includes('bane');
+          return name.includes('slay') || name.includes('killer') || name.includes('bane') ||
+                 name.includes('death') || name.includes('murder') || name.includes('carnage');
         }).length;
         
-        // Holy = explicitly marked as relic OR held by entity (temple/religion)
-        const holy = allArtifacts.filter(a => {
-          if (a.isRelic === true) return true;
-          return a.entityId && a.entityId > 0;
-        }).length;
+        // Holy = held by a civilization/entity (worship items)
+        const holy = allArtifacts.filter(a => a.entityId && a.entityId > 0).length;
         
-        // Written = books, scrolls, slabs, etc.
-        const written = allArtifacts.filter(a => {
-          if (a.isWrittenContent === true) return true;
-          const type = `${a.itemType || ''} ${a.itemSubtype || ''}`.toLowerCase();
-          return type.includes('book') || type.includes('scroll') || type.includes('slab') || 
-                 type.includes('codex') || type.includes('page');
-        }).length;
+        // Written = has written content ID (books, scrolls, etc.)
+        const written = allArtifacts.filter(a => a.writtenContentId && a.writtenContentId > 0).length;
         
-        // Lost = no current location (holder, site, or entity)
+        // Lost = no holder AND no site (abandoned in wilderness)
         const lost = allArtifacts.filter(a => 
           (!a.holderHfid || a.holderHfid <= 0) && 
-          (!a.siteId || a.siteId <= 0) &&
-          (!a.entityId || a.entityId <= 0)
+          (!a.siteId || a.siteId <= 0)
         ).length;
         
         setArtifactStats({
