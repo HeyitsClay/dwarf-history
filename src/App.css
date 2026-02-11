@@ -1473,3 +1473,38 @@ html, body, #root {
   background: var(--border);
   color: var(--text);
 }
+
+/* Artifact Modal Styles - Additional */
+.btn-back {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-back:hover {
+  background: var(--border);
+  border-color: var(--accent);
+}
+
+.artifact-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  gap: 1rem;
+}
+
+.artifact-detail-header h3 {
+  flex: 1;
+  font-size: 1.1rem;
+  color: var(--text);
+  margin: 0;
+  text-align: center;
+}

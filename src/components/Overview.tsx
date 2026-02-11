@@ -87,91 +87,162 @@ interface ArtifactListModalProps {
   onClose: () => void;
 }
 
+const ArtifactDetailModal = ({ artifact, onClose, onBack }: { 
+  artifact: Artifact; 
+  onClose: () => void;
+  onBack: () => void;
+}) => {
+  const [figureNames, setFigureNames] = useState<Map<number, string>>(new Map());
+  const [siteNames, setSiteNames] = useState<Map<number, string>>(new Map());
+  const [entityNames, setEntityNames] = useState<Map<number, string>>(new Map());
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadNames = async () => {
+      setLoading(true);
+      const idsToFetch = {
+        figures: new Set<number>(),
+        sites: new Set<number>(),
+        entities: new Set<number>()
+      };
+
+      if (artifact.creatorHfid && artifact.creatorHfid > 0) idsToFetch.figures.add(artifact.creatorHfid);
+      if (artifact.holderHfid && artifact.holderHfid > 0) idsToFetch.figures.add(artifact.holderHfid);
+      if (artifact.siteId && artifact.siteId > 0) idsToFetch.sites.add(artifact.siteId);
+      if (artifact.subregionId && artifact.subregionId > 0) idsToFetch.sites.add(artifact.subregionId);
+      if (artifact.entityId && artifact.entityId > 0) idsToFetch.entities.add(artifact.entityId);
+
+      const [figures, sites, entities] = await Promise.all([
+        db.figures.where('id').anyOf(Array.from(idsToFetch.figures)).toArray(),
+        db.sites.where('id').anyOf(Array.from(idsToFetch.sites)).toArray(),
+        db.entities.where('id').anyOf(Array.from(idsToFetch.entities)).toArray()
+      ]);
+
+      setFigureNames(new Map(figures.map(f => [f.id, f.name])));
+      setSiteNames(new Map(sites.map(s => [s.id, s.name])));
+      setEntityNames(new Map(entities.map(e => [e.id, e.name || `Entity ${e.id}`])));
+      setLoading(false);
+    };
+
+    loadNames();
+  }, [artifact]);
+
+  const getFigureName = (id: number | undefined) => {
+    if (!id || id <= 0) return null;
+    return figureNames.get(id) || `Unknown (#${id})`;
+  };
+
+  const getSiteName = (id: number | undefined) => {
+    if (!id || id <= 0) return null;
+    return siteNames.get(id) || `Unknown Site (#${id})`;
+  };
+
+  const getEntityName = (id: number | undefined) => {
+    if (!id || id <= 0) return null;
+    return entityNames.get(id) || `Unknown Entity (#${id})`;
+  };
+
+  return (
+    <div className="artifact-modal-overlay" onClick={onClose}>
+      <div className="artifact-detail-modal" onClick={e => e.stopPropagation()}>
+        <div className="artifact-detail-header">
+          <button className="btn-back" onClick={onBack}>← Back</button>
+          <h3>{artifact.name || 'Unnamed Artifact'}</h3>
+          <button className="btn-close" onClick={onClose}>×</button>
+        </div>
+        <div className="artifact-detail-content">
+          {loading ? (
+            <p className="artifact-list-empty">Loading details...</p>
+          ) : (
+            <>
+              <div className="artifact-detail-row">
+                <span className="artifact-detail-label">ID:</span>
+                <span className="artifact-detail-value">#{artifact.id}</span>
+              </div>
+              {artifact.itemType && (
+                <div className="artifact-detail-row">
+                  <span className="artifact-detail-label">Type:</span>
+                  <span className="artifact-detail-value">{artifact.itemType}</span>
+                </div>
+              )}
+              {artifact.itemSubtype && (
+                <div className="artifact-detail-row">
+                  <span className="artifact-detail-label">Subtype:</span>
+                  <span className="artifact-detail-value">{artifact.itemSubtype}</span>
+                </div>
+              )}
+              {artifact.material && (
+                <div className="artifact-detail-row">
+                  <span className="artifact-detail-label">Material:</span>
+                  <span className="artifact-detail-value">{artifact.material}</span>
+                </div>
+              )}
+              {artifact.creatorHfid && artifact.creatorHfid > 0 && (
+                <div className="artifact-detail-row">
+                  <span className="artifact-detail-label">Creator:</span>
+                  <span className="artifact-detail-value">{getFigureName(artifact.creatorHfid)}</span>
+                </div>
+              )}
+              {artifact.holderHfid && artifact.holderHfid > 0 && (
+                <div className="artifact-detail-row">
+                  <span className="artifact-detail-label">Holder:</span>
+                  <span className="artifact-detail-value">{getFigureName(artifact.holderHfid)}</span>
+                </div>
+              )}
+              {artifact.siteId && artifact.siteId > 0 && (
+                <div className="artifact-detail-row">
+                  <span className="artifact-detail-label">Location:</span>
+                  <span className="artifact-detail-value">{getSiteName(artifact.siteId)}</span>
+                </div>
+              )}
+              {artifact.subregionId && artifact.subregionId > 0 && (
+                <div className="artifact-detail-row">
+                  <span className="artifact-detail-label">Region:</span>
+                  <span className="artifact-detail-value">{getSiteName(artifact.subregionId)}</span>
+                </div>
+              )}
+              {artifact.entityId && artifact.entityId > 0 && (
+                <div className="artifact-detail-row">
+                  <span className="artifact-detail-label">Holy Site:</span>
+                  <span className="artifact-detail-value">{getEntityName(artifact.entityId)}</span>
+                </div>
+              )}
+              {artifact.writtenContentId && artifact.writtenContentId > 0 && (
+                <div className="artifact-detail-row">
+                  <span className="artifact-detail-label">Content ID:</span>
+                  <span className="artifact-detail-value">#{artifact.writtenContentId}</span>
+                </div>
+              )}
+              {artifact.writtenContentType && (
+                <div className="artifact-detail-row">
+                  <span className="artifact-detail-label">Content Type:</span>
+                  <span className="artifact-detail-value">{artifact.writtenContentType}</span>
+                </div>
+              )}
+              {artifact.writtenContentTitle && (
+                <div className="artifact-detail-row">
+                  <span className="artifact-detail-label">Content Title:</span>
+                  <span className="artifact-detail-value">{artifact.writtenContentTitle}</span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ArtifactListModal = ({ title, icon, artifacts, onClose }: ArtifactListModalProps) => {
   const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
 
   if (selectedArtifact) {
     return (
-      <div className="artifact-modal-overlay" onClick={() => setSelectedArtifact(null)}>
-        <div className="artifact-detail-modal" onClick={e => e.stopPropagation()}>
-          <div className="artifact-detail-header">
-            <h3>{selectedArtifact.name || 'Unnamed Artifact'}</h3>
-            <button className="btn-close" onClick={() => setSelectedArtifact(null)}>×</button>
-          </div>
-          <div className="artifact-detail-content">
-            <div className="artifact-detail-row">
-              <span className="artifact-detail-label">ID:</span>
-              <span className="artifact-detail-value">{selectedArtifact.id}</span>
-            </div>
-            {selectedArtifact.itemType && (
-              <div className="artifact-detail-row">
-                <span className="artifact-detail-label">Type:</span>
-                <span className="artifact-detail-value">{selectedArtifact.itemType}</span>
-              </div>
-            )}
-            {selectedArtifact.itemSubtype && (
-              <div className="artifact-detail-row">
-                <span className="artifact-detail-label">Subtype:</span>
-                <span className="artifact-detail-value">{selectedArtifact.itemSubtype}</span>
-              </div>
-            )}
-            {selectedArtifact.material && (
-              <div className="artifact-detail-row">
-                <span className="artifact-detail-label">Material:</span>
-                <span className="artifact-detail-value">{selectedArtifact.material}</span>
-              </div>
-            )}
-            {selectedArtifact.creatorHfid && selectedArtifact.creatorHfid > 0 && (
-              <div className="artifact-detail-row">
-                <span className="artifact-detail-label">Creator HFID:</span>
-                <span className="artifact-detail-value">{selectedArtifact.creatorHfid}</span>
-              </div>
-            )}
-            {selectedArtifact.holderHfid && selectedArtifact.holderHfid > 0 && (
-              <div className="artifact-detail-row">
-                <span className="artifact-detail-label">Holder HFID:</span>
-                <span className="artifact-detail-value">{selectedArtifact.holderHfid}</span>
-              </div>
-            )}
-            {selectedArtifact.siteId && selectedArtifact.siteId > 0 && (
-              <div className="artifact-detail-row">
-                <span className="artifact-detail-label">Site ID:</span>
-                <span className="artifact-detail-value">{selectedArtifact.siteId}</span>
-              </div>
-            )}
-            {selectedArtifact.subregionId && selectedArtifact.subregionId > 0 && (
-              <div className="artifact-detail-row">
-                <span className="artifact-detail-label">Subregion ID:</span>
-                <span className="artifact-detail-value">{selectedArtifact.subregionId}</span>
-              </div>
-            )}
-            {selectedArtifact.entityId && selectedArtifact.entityId > 0 && (
-              <div className="artifact-detail-row">
-                <span className="artifact-detail-label">Entity ID (Holy):</span>
-                <span className="artifact-detail-value">{selectedArtifact.entityId}</span>
-              </div>
-            )}
-            {selectedArtifact.writtenContentId && selectedArtifact.writtenContentId > 0 && (
-              <div className="artifact-detail-row">
-                <span className="artifact-detail-label">Written Content ID:</span>
-                <span className="artifact-detail-value">{selectedArtifact.writtenContentId}</span>
-              </div>
-            )}
-            {selectedArtifact.writtenContentType && (
-              <div className="artifact-detail-row">
-                <span className="artifact-detail-label">Content Type:</span>
-                <span className="artifact-detail-value">{selectedArtifact.writtenContentType}</span>
-              </div>
-            )}
-            {selectedArtifact.writtenContentTitle && (
-              <div className="artifact-detail-row">
-                <span className="artifact-detail-label">Content Title:</span>
-                <span className="artifact-detail-value">{selectedArtifact.writtenContentTitle}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <ArtifactDetailModal 
+        artifact={selectedArtifact} 
+        onClose={onClose}
+        onBack={() => setSelectedArtifact(null)}
+      />
     );
   }
 
