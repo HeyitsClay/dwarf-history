@@ -116,6 +116,21 @@ export async function parseLegendsFile(
   const validYears = result.events.filter(e => e.year != null && !isNaN(e.year) && e.year > 0).map(e => e.year);
   const year = validYears.length > 0 ? validYears.reduce((max, y) => y > max ? y : max, 0) : 0;
   
+  // Cross-reference artifact events to populate creator and entity info
+  const artifactMap = new Map(result.artifacts.map(a => [a.id, a]));
+  for (const event of result.events) {
+    if (event.artifactId && artifactMap.has(event.artifactId)) {
+      const artifact = artifactMap.get(event.artifactId)!;
+      if (event.type === 'artifact created' && event.histFigureId && event.histFigureId > 0) {
+        artifact.creatorHfid = event.histFigureId;
+      }
+      if (event.entityId && event.entityId > 0) {
+        // Artifact stored/claimed by entity (temple/civilization) = holy relic
+        artifact.entityId = event.entityId;
+      }
+    }
+  }
+  
   // Filter out entries with invalid IDs before returning
   const cleanResult = {
     figures: validFigures,
@@ -125,7 +140,6 @@ export async function parseLegendsFile(
     artifacts: result.artifacts.filter(a => a.id != null && !isNaN(a.id)),
   };
   
-  console.log('Main parser: Complete! World:', worldName, 'Year:', year, 'Artifacts:', cleanResult.artifacts.length);
   return { ...cleanResult, worldName, year };
 }
 
@@ -462,6 +476,20 @@ class SimpleXmlParser {
           break;
         case 'state':
           this.state.currentEvent.state = text;
+          break;
+        case 'artifact_id':
+          this.state.currentEvent.artifactId = parseInt(text, 10);
+          break;
+        case 'hist_figure_id':
+          this.state.currentEvent.histFigureId = parseInt(text, 10);
+          break;
+        case 'entity_id':
+          if (this.state.inHistoricalEvent) {
+            this.state.currentEvent.entityId = parseInt(text, 10);
+          }
+          break;
+        case 'unit_id':
+          this.state.currentEvent.unitId = parseInt(text, 10);
           break;
         case 'historical_event':
           this.state.inHistoricalEvent = false;

@@ -356,6 +356,20 @@ class SimpleXmlParser {
         case 'state':
           this.state.currentEvent.state = text;
           break;
+        case 'artifact_id':
+          this.state.currentEvent.artifactId = parseInt(text, 10);
+          break;
+        case 'hist_figure_id':
+          this.state.currentEvent.histFigureId = parseInt(text, 10);
+          break;
+        case 'entity_id':
+          if (this.state.inHistoricalEvent) {
+            this.state.currentEvent.entityId = parseInt(text, 10);
+          }
+          break;
+        case 'unit_id':
+          this.state.currentEvent.unitId = parseInt(text, 10);
+          break;
         case 'historical_event':
           this.state.inHistoricalEvent = false;
           this.events.push(this.state.currentEvent as HistoricalEvent);
@@ -589,6 +603,20 @@ self.onmessage = async (e: MessageEvent) => {
           figure.age = figure.deathYear - figure.birthYear;
         } else if (figure.birthYear > 0) {
           figure.age = maxYear - figure.birthYear;
+        }
+      }
+      
+      // Cross-reference artifact events to populate creator and entity info
+      const artifactMap = new Map(result.artifacts.map(a => [a.id, a]));
+      for (const event of result.events) {
+        if (event.artifactId && artifactMap.has(event.artifactId)) {
+          const artifact = artifactMap.get(event.artifactId)!;
+          if (event.type === 'artifact created' && event.histFigureId && event.histFigureId > 0) {
+            artifact.creatorHfid = event.histFigureId;
+          }
+          if (event.entityId && event.entityId > 0) {
+            artifact.entityId = event.entityId;
+          }
         }
       }
       

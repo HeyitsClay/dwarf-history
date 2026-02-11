@@ -113,6 +113,11 @@ export interface HistoricalEvent {
   link?: string;
   // State change fields
   state?: string;
+  // Artifact event fields
+  artifactId?: number;
+  histFigureId?: number;  // creator/possessor for artifact events
+  entityId?: number;      // entity for artifact stored/claimed events
+  unitId?: number;
 }
 
 export interface WorldMetadata {
