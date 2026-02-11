@@ -813,6 +813,9 @@ class StreamingXmlParser {
     this.artifactMap = new Map(this.artifacts.map(a => [a.id, a]));
     this.writtenContentMap = new Map(this.writtenContents.map(w => [w.id, w]));
 
+    console.log(`Parser finalize: ${this.figures.length} figures, ${this.events.length} events`);
+    console.log(`FigureMap size: ${this.figureMap.size}`);
+
     // Cross-reference written content with artifacts
     for (const artifact of this.artifacts) {
       if (artifact.writtenContentId && this.writtenContentMap.has(artifact.writtenContentId)) {
@@ -849,30 +852,37 @@ class StreamingXmlParser {
   }
 
   private processEvents(): void {
+    let deathEvents = 0;
+    let processedKills = 0;
+    
     for (const event of this.events) {
       // Process death events
-      if (event.type === 'hf_died' && event.slayerHfid && event.slayerHfid !== -1) {
-        const killer = this.figureMap.get(event.slayerHfid);
-        const victim = this.figureMap.get(event.hfid!);
-        
-        if (killer && victim) {
-          killer.kills.push({
-            victimId: victim.id,
-            victimName: victim.name,
-            victimRace: victim.race,
-            year: event.year,
-            siteId: event.siteId || -1,
-            cause: event.cause || 'unknown',
-          });
-        }
-        
-        if (victim) {
-          victim.killer = {
-            hfid: event.slayerHfid,
-            name: killer?.name || 'Unknown',
-            cause: event.cause || 'unknown',
-            year: event.year,
-          };
+      if (event.type === 'hf_died') {
+        deathEvents++;
+        if (event.slayerHfid && event.slayerHfid !== -1) {
+          const killer = this.figureMap.get(event.slayerHfid);
+          const victim = this.figureMap.get(event.hfid!);
+          
+          if (killer && victim) {
+            processedKills++;
+            killer.kills.push({
+              victimId: victim.id,
+              victimName: victim.name,
+              victimRace: victim.race,
+              year: event.year,
+              siteId: event.siteId || -1,
+              cause: event.cause || 'unknown',
+            });
+          }
+          
+          if (victim) {
+            victim.killer = {
+              hfid: event.slayerHfid,
+              name: killer?.name || 'Unknown',
+              cause: event.cause || 'unknown',
+              year: event.year,
+            };
+          }
         }
       }
 
@@ -994,6 +1004,9 @@ class StreamingXmlParser {
         }
       }
     }
+
+    console.log(`ProcessEvents: ${deathEvents} death events, ${processedKills} processed kills`);
+    console.log(`Total figures: ${this.figures.length}, figures with kills: ${this.figures.filter(f => f.kills.length > 0).length}`);
 
     // Calculate artifact current status from provenance
     for (const artifact of this.artifacts) {
