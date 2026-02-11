@@ -813,9 +813,6 @@ class StreamingXmlParser {
     this.artifactMap = new Map(this.artifacts.map(a => [a.id, a]));
     this.writtenContentMap = new Map(this.writtenContents.map(w => [w.id, w]));
 
-    console.log(`Parser finalize: ${this.figures.length} figures, ${this.events.length} events`);
-    console.log(`FigureMap size: ${this.figureMap.size}`);
-
     // Cross-reference written content with artifacts
     for (const artifact of this.artifacts) {
       if (artifact.writtenContentId && this.writtenContentMap.has(artifact.writtenContentId)) {
@@ -852,19 +849,14 @@ class StreamingXmlParser {
   }
 
   private processEvents(): void {
-    let deathEvents = 0;
-    let processedKills = 0;
-    
     for (const event of this.events) {
       // Process death events
-      if (event.type === 'hf_died') {
-        deathEvents++;
+      if (event.type === 'hf died') {
         if (event.slayerHfid && event.slayerHfid !== -1) {
           const killer = this.figureMap.get(event.slayerHfid);
           const victim = this.figureMap.get(event.hfid!);
           
           if (killer && victim) {
-            processedKills++;
             killer.kills.push({
               victimId: victim.id,
               victimName: victim.name,
@@ -903,7 +895,7 @@ class StreamingXmlParser {
       }
 
       // Process item stolen events
-      if (event.type === 'item_stolen' && event.artifactId) {
+      if (event.type === 'item stolen' && event.artifactId) {
         const artifact = this.artifactMap.get(event.artifactId);
         if (artifact) {
           artifact.provenance.push({
@@ -916,7 +908,7 @@ class StreamingXmlParser {
       }
 
       // Process change_hf_state events (vampires, weres, necromancers)
-      if (event.type === 'change_hf_state' && event.hfid && event.state) {
+      if (event.type === 'change hf state' && event.hfid && event.state) {
         const figure = this.figureMap.get(event.hfid);
         if (figure) {
           switch (event.state) {
@@ -939,7 +931,7 @@ class StreamingXmlParser {
       }
 
       // Process HF link events (marriages, families)
-      if (event.type === 'add_hf_hf_link' && event.hfid && event.targetHfid) {
+      if (event.type === 'add hf hf link' && event.hfid && event.targetHfid) {
         const figure = this.figureMap.get(event.hfid);
         const target = this.figureMap.get(event.targetHfid);
         if (figure && target) {
@@ -951,7 +943,7 @@ class StreamingXmlParser {
       }
 
       // Process entity link events
-      if (event.type === 'add_hf_entity_link' && event.hfid && event.entityId) {
+      if (event.type === 'add hf entity link' && event.hfid && event.entityId) {
         const figure = this.figureMap.get(event.hfid);
         const entity = this.entityMap.get(event.entityId);
         if (figure) {
@@ -977,7 +969,7 @@ class StreamingXmlParser {
       }
 
       // Process site taken over events
-      if (event.type === 'site_taken_over' && event.siteId) {
+      if (event.type === 'site taken over' && event.siteId) {
         const site = this.siteMap.get(event.siteId);
         const entity = this.entityMap.get(event.civId || event.siteEntityId || 0);
         if (site && entity) {
@@ -988,7 +980,7 @@ class StreamingXmlParser {
       }
 
       // Process created site events
-      if (event.type === 'created_site' && event.siteId) {
+      if (event.type === 'created site' && event.siteId) {
         const site = this.siteMap.get(event.siteId);
         const figure = this.figureMap.get(event.hfid || 0);
         if (site && figure) {
@@ -1004,9 +996,6 @@ class StreamingXmlParser {
         }
       }
     }
-
-    console.log(`ProcessEvents: ${deathEvents} death events, ${processedKills} processed kills`);
-    console.log(`Total figures: ${this.figures.length}, figures with kills: ${this.figures.filter(f => f.kills.length > 0).length}`);
 
     // Calculate artifact current status from provenance
     for (const artifact of this.artifacts) {

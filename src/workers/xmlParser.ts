@@ -786,7 +786,7 @@ class StreamingXmlParser {
 
   private processEvents(): void {
     for (const event of this.events) {
-      if (event.type === 'hf_died' && event.slayerHfid && event.slayerHfid !== -1) {
+      if (event.type === 'hf died' && event.slayerHfid && event.slayerHfid !== -1) {
         const killer = this.figureMap.get(event.slayerHfid);
         const victim = this.figureMap.get(event.hfid!);
         
@@ -826,7 +826,7 @@ class StreamingXmlParser {
         }
       }
 
-      if (event.type === 'item_stolen' && event.artifactId) {
+      if (event.type === 'item stolen' && event.artifactId) {
         const artifact = this.artifactMap.get(event.artifactId);
         if (artifact) {
           artifact.provenance.push({
@@ -838,7 +838,7 @@ class StreamingXmlParser {
         }
       }
 
-      if (event.type === 'change_hf_state' && event.hfid && event.state) {
+      if (event.type === 'change hf state' && event.hfid && event.state) {
         const figure = this.figureMap.get(event.hfid);
         if (figure) {
           switch (event.state) {
@@ -859,7 +859,7 @@ class StreamingXmlParser {
         }
       }
 
-      if (event.type === 'add_hf_hf_link' && event.hfid && event.targetHfid) {
+      if (event.type === 'add hf hf link' && event.hfid && event.targetHfid) {
         const figure = this.figureMap.get(event.hfid);
         const target = this.figureMap.get(event.targetHfid);
         if (figure && target) {
@@ -870,7 +870,7 @@ class StreamingXmlParser {
         }
       }
 
-      if (event.type === 'add_hf_entity_link' && event.hfid && event.entityId) {
+      if (event.type === 'add hf entity link' && event.hfid && event.entityId) {
         const figure = this.figureMap.get(event.hfid);
         const entity = this.entityMap.get(event.entityId);
         if (figure) {
@@ -895,7 +895,7 @@ class StreamingXmlParser {
         }
       }
 
-      if (event.type === 'site_taken_over' && event.siteId) {
+      if (event.type === 'site taken over' && event.siteId) {
         const site = this.siteMap.get(event.siteId);
         const entity = this.entityMap.get(event.civId || event.siteEntityId || 0);
         if (site && entity) {
@@ -905,7 +905,7 @@ class StreamingXmlParser {
         }
       }
 
-      if (event.type === 'created_site' && event.siteId) {
+      if (event.type === 'created site' && event.siteId) {
         const site = this.siteMap.get(event.siteId);
         const figure = this.figureMap.get(event.hfid || 0);
         if (site && figure) {
