@@ -521,29 +521,46 @@ const GuildHall = ({ skillsData }: GuildHallProps) => {
 // Figure Detail Modal Component
 const FigureDetailModal = ({ figure, onClose }: { figure: HistoricalFigure; onClose: () => void }) => {
   const [victimNames, setVictimNames] = useState<Map<number, string>>(new Map());
+  const [entityNames, setEntityNames] = useState<Map<number, string>>(new Map());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadVictimNames = async () => {
-      if (!figure.kills || figure.kills.length === 0) {
-        setLoading(false);
-        return;
+    const loadNames = async () => {
+      // Load victim names
+      if (figure.kills && figure.kills.length > 0) {
+        const victimIds = figure.kills.map(k => k.victimId);
+        const victims = await db.figures.where('id').anyOf(victimIds).toArray();
+        setVictimNames(new Map(victims.map(v => [v.id, v.name])));
       }
       
-      const victimIds = figure.kills.map(k => k.victimId);
-      const victims = await db.figures.where('id').anyOf(victimIds).toArray();
-      setVictimNames(new Map(victims.map(v => [v.id, v.name])));
+      // Load entity names for affiliations
+      if (figure.entityLinks && figure.entityLinks.length > 0) {
+        const entityIds = figure.entityLinks.map(l => l.entityId);
+        const entities = await db.entities.where('id').anyOf(entityIds).toArray();
+        setEntityNames(new Map(entities.map(e => [e.id, e.name || `Entity ${e.id}`])));
+      }
+      
       setLoading(false);
     };
     
-    loadVictimNames();
+    loadNames();
   }, [figure]);
 
   const getAgeDisplay = () => {
+    if (figure.age === undefined || figure.age === null) {
+      return 'Unknown';
+    }
     if (figure.deathYear > 0) {
       return `${figure.age} years (died ${figure.deathYear})`;
     }
     return `${figure.age} years (alive)`;
+  };
+
+  const getBirthYearDisplay = () => {
+    if (figure.birthYear < 0) {
+      return `${Math.abs(figure.birthYear)} Before Arrival`;
+    }
+    return `Year ${figure.birthYear}`;
   };
 
   const getStatusBadges = () => {
@@ -586,7 +603,7 @@ const FigureDetailModal = ({ figure, onClose }: { figure: HistoricalFigure; onCl
               </div>
               <div className="figure-info-item">
                 <span className="label">Born</span>
-                <span className="value">Year {figure.birthYear}</span>
+                <span className="value">{getBirthYearDisplay()}</span>
               </div>
               {figure.deathYear > 0 && (
                 <div className="figure-info-item">
@@ -685,7 +702,7 @@ const FigureDetailModal = ({ figure, onClose }: { figure: HistoricalFigure; onCl
                 {figure.entityLinks.map((link, i) => (
                   <div key={i} className="affiliation-item">
                     <span className="aff-type">{link.linkType}</span>
-                    <span className="aff-entity">Entity #{link.entityId}</span>
+                    <span className="aff-entity">{entityNames.get(link.entityId) || `Entity #${link.entityId}`}</span>
                     {link.startYear && (
                       <span className="aff-year">since {link.startYear}</span>
                     )}
