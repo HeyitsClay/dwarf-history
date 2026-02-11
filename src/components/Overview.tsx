@@ -95,24 +95,6 @@ const ArtifactsCard = () => {
       try {
         const allArtifacts = await db.artifacts.toArray();
         
-        // Check if data needs re-upload (names missing = old corrupted data)
-        const hasCorruptedData = allArtifacts.length > 0 && !allArtifacts[0].name;
-        
-        // Log raw data for debugging
-        console.log(`Loaded ${allArtifacts.length} artifacts`);
-        if (allArtifacts.length > 0) {
-          console.log('First artifact:', allArtifacts[0]);
-        }
-        
-        if (hasCorruptedData) {
-          console.warn('Artifact data is corrupted - needs re-upload');
-        }
-        
-        // Debug: Count artifacts with various properties
-        const withCreator = allArtifacts.filter(a => a.creatorHfid && a.creatorHfid > 0).length;
-        const withName = allArtifacts.filter(a => a.name && a.name.length > 0).length;
-        console.log('Artifact field analysis:', { withCreator, withName, hasCorruptedData });
-        
         // Categorize artifacts
         // "Created" = any artifact with a valid creator_hf_id (> 0, not -1, not undefined)
         const created = allArtifacts.filter(a => a.creatorHfid && a.creatorHfid > 0).length;
@@ -154,7 +136,7 @@ const ArtifactsCard = () => {
           lost
         });
         
-        console.log('Artifact counts:', { total: allArtifacts.length, created, heroic, holy, written, lost, hasCorruptedData });
+
       } catch (err) {
         console.error('Error loading artifacts:', err);
       }

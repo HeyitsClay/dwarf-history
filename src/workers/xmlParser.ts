@@ -167,7 +167,7 @@ class SimpleXmlParser {
         break;
       case 'artifact':
         this.state.inArtifact = true;
-        this.state.currentArtifact = { ownerHistory: [] };
+        this.state.currentArtifact = {};
         break;
       case 'written_content':
         this.state.inWrittenContent = true;
@@ -469,7 +469,6 @@ class SimpleXmlParser {
           this.state.currentArtifact.slainBeastName = text;
           break;
         case 'written_content_id':
-          // Link to written content for books/slabs
           const wcId = parseInt(text, 10);
           const wc = this.writtenContents.get(wcId);
           if (wc) {

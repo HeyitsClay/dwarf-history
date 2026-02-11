@@ -268,7 +268,7 @@ class SimpleXmlParser {
         break;
       case 'artifact':
         this.state.inArtifact = true;
-        this.state.currentArtifact = { ownerHistory: [] };
+        this.state.currentArtifact = {};
         break;
       case 'written_content':
         this.state.inWrittenContent = true;
@@ -536,13 +536,8 @@ class SimpleXmlParser {
       }
     }
 
-    // Parse artifacts
+    // Parse artifacts - SIMPLIFIED
     if (this.state.inArtifact) {
-      // Debug: Log ALL fields for first 2 artifacts to diagnose issue
-      if (this.artifacts.length < 2) {
-        console.log(`Artifact[${this.artifacts.length}] <${name}>: "${text?.substring(0, 50)}"`);
-      }
-      
       switch (name) {
         case 'id':
           this.state.currentArtifact.id = parseInt(text, 10);
@@ -581,7 +576,6 @@ class SimpleXmlParser {
           this.state.currentArtifact.slainBeastName = text;
           break;
         case 'written_content_id':
-          // Link to written content for books/slabs
           const wcId = parseInt(text, 10);
           const wc = this.writtenContents.get(wcId);
           if (wc) {
@@ -601,17 +595,6 @@ class SimpleXmlParser {
   }
 
   finalize(): { figures: HistoricalFigure[]; events: HistoricalEvent[]; sites: Site[]; entities: Entity[]; artifacts: Artifact[] } {
-    // Debug: log first few artifacts to verify parsing
-    console.log(`Parser finalized: ${this.artifacts.length} artifacts`);
-    if (this.artifacts.length > 0) {
-      console.log('First artifact parsed:', {
-        id: this.artifacts[0].id,
-        name: this.artifacts[0].name,
-        itemType: this.artifacts[0].itemType,
-        creatorHfid: this.artifacts[0].creatorHfid
-      });
-    }
-    
     return {
       figures: this.figures,
       events: this.events,

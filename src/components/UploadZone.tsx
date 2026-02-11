@@ -61,7 +61,6 @@ export const UploadZone = ({ onComplete, existingData }: UploadZoneProps) => {
 
       // Store data in IndexedDB
       const { figures, events, sites, entities, artifacts } = result;
-      console.log(`UploadZone: Storing ${figures.length} figures, ${events.length} events, ${artifacts.length} artifacts...`);
 
       // Create metadata
       const metadata: WorldMetadata = {

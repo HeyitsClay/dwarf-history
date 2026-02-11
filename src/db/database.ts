@@ -118,7 +118,7 @@ export class DwarfHistoryDB extends Dexie {
     const batchSize = 500;
     for (let i = 0; i < uniqueArtifacts.length; i += batchSize) {
       const batch = uniqueArtifacts.slice(i, i + batchSize);
-      await this.artifacts.bulkPut(batch); // Use bulkPut to overwrite duplicates
+      await this.artifacts.bulkPut(batch);
       if (progressCallback) {
         progressCallback(Math.min(i + batchSize, uniqueArtifacts.length));
       }
