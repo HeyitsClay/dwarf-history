@@ -518,11 +518,194 @@ const GuildHall = ({ skillsData }: GuildHallProps) => {
   );
 };
 
+// Figure Detail Modal Component
+const FigureDetailModal = ({ figure, onClose }: { figure: HistoricalFigure; onClose: () => void }) => {
+  const [victimNames, setVictimNames] = useState<Map<number, string>>(new Map());
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadVictimNames = async () => {
+      if (!figure.kills || figure.kills.length === 0) {
+        setLoading(false);
+        return;
+      }
+      
+      const victimIds = figure.kills.map(k => k.victimId);
+      const victims = await db.figures.where('id').anyOf(victimIds).toArray();
+      setVictimNames(new Map(victims.map(v => [v.id, v.name])));
+      setLoading(false);
+    };
+    
+    loadVictimNames();
+  }, [figure]);
+
+  const getAgeDisplay = () => {
+    if (figure.deathYear > 0) {
+      return `${figure.age} years (died ${figure.deathYear})`;
+    }
+    return `${figure.age} years (alive)`;
+  };
+
+  const getStatusBadges = () => {
+    const badges = [];
+    if (figure.isDeity) badges.push({ label: 'Deity', color: '#ffd700' });
+    if (figure.isForce) badges.push({ label: 'Force', color: '#ff6b6b' });
+    if (figure.isVampire) badges.push({ label: 'Vampire', color: '#8b0000' });
+    if (figure.isWerecreature) badges.push({ label: 'Werecreature', color: '#4a5568' });
+    if (figure.isNecromancer) badges.push({ label: 'Necromancer', color: '#2d3748' });
+    if (figure.isUndead) badges.push({ label: 'Undead', color: '#718096' });
+    if (figure.deathYear <= 0) badges.push({ label: 'Alive', color: '#48bb78' });
+    else badges.push({ label: 'Deceased', color: '#a0aec0' });
+    return badges;
+  };
+
+  return (
+    <div className="figure-detail-overlay" onClick={onClose}>
+      <div className="figure-detail-container" onClick={e => e.stopPropagation()}>
+        <div className="figure-detail-header">
+          <h2>{figure.name}</h2>
+          <button className="btn-close" onClick={onClose}>×</button>
+        </div>
+        
+        <div className="figure-detail-content">
+          {/* Basic Info */}
+          <section className="figure-section">
+            <h3>Identity</h3>
+            <div className="figure-info-grid">
+              <div className="figure-info-item">
+                <span className="label">Race</span>
+                <span className="value">{figure.race}</span>
+              </div>
+              <div className="figure-info-item">
+                <span className="label">Caste</span>
+                <span className="value">{figure.caste}</span>
+              </div>
+              <div className="figure-info-item">
+                <span className="label">Age</span>
+                <span className="value">{getAgeDisplay()}</span>
+              </div>
+              <div className="figure-info-item">
+                <span className="label">Born</span>
+                <span className="value">Year {figure.birthYear}</span>
+              </div>
+              {figure.deathYear > 0 && (
+                <div className="figure-info-item">
+                  <span className="label">Died</span>
+                  <span className="value">Year {figure.deathYear}</span>
+                </div>
+              )}
+              {figure.killer && (
+                <div className="figure-info-item">
+                  <span className="label">Killed By</span>
+                  <span className="value">{figure.killer.name} ({figure.killer.cause})</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="figure-badges">
+              {getStatusBadges().map((badge, i) => (
+                <span key={i} className="figure-badge" style={{ backgroundColor: badge.color }}>
+                  {badge.label}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          {/* Spheres (for deities) */}
+          {figure.spheres && figure.spheres.length > 0 && (
+            <section className="figure-section">
+              <h3>Spheres</h3>
+              <div className="figure-spheres">
+                {figure.spheres.map((sphere, i) => (
+                  <span key={i} className="sphere-tag">{sphere}</span>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Skills */}
+          {figure.hfSkills && figure.hfSkills.length > 0 && (
+            <section className="figure-section">
+              <h3>Skills ({figure.hfSkills.length})</h3>
+              <div className="figure-skills">
+                {figure.hfSkills
+                  .sort((a, b) => b.totalIp - a.totalIp)
+                  .map((skill, i) => (
+                    <div key={i} className="skill-item">
+                      <span className="skill-name">{skill.skill.replace(/_/g, ' ')}</span>
+                      <span className="skill-level">Lv.{Math.floor(skill.totalIp / 100)}</span>
+                    </div>
+                  ))}
+              </div>
+            </section>
+          )}
+
+          {/* Kills Section */}
+          {figure.kills && figure.kills.length > 0 && (
+            <section className="figure-section">
+              <h3>🗡️ Kills ({figure.kills.length})</h3>
+              {loading ? (
+                <p>Loading victims...</p>
+              ) : (
+                <div className="figure-kills">
+                  {figure.kills.map((kill, i) => (
+                    <div key={i} className="kill-item">
+                      <span className="kill-number">#{i + 1}</span>
+                      <span className="kill-victim">{victimNames.get(kill.victimId) || kill.victimName}</span>
+                      <span className="kill-race">{kill.victimRace}</span>
+                      <span className="kill-year">Year {kill.year}</span>
+                      <span className="kill-cause">{kill.cause}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Relationships */}
+          {figure.hfLinks && figure.hfLinks.length > 0 && (
+            <section className="figure-section">
+              <h3>Relationships</h3>
+              <div className="figure-relationships">
+                {figure.hfLinks.map((link, i) => (
+                  <div key={i} className="relationship-item">
+                    <span className="rel-type">{link.linkType}</span>
+                    <span className="rel-hfid">HF #{link.hfid}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Entity Links */}
+          {figure.entityLinks && figure.entityLinks.length > 0 && (
+            <section className="figure-section">
+              <h3>Affiliations</h3>
+              <div className="figure-affiliations">
+                {figure.entityLinks.map((link, i) => (
+                  <div key={i} className="affiliation-item">
+                    <span className="aff-type">{link.linkType}</span>
+                    <span className="aff-entity">Entity #{link.entityId}</span>
+                    {link.startYear && (
+                      <span className="aff-year">since {link.startYear}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const Overview = ({ onNewWorld }: OverviewProps) => {
   const [year, setYear] = useState<number>(0);
   const [livingCount, setLivingCount] = useState(0);
   const [totalDeaths, setTotalDeaths] = useState(0);
   const [topKiller, setTopKiller] = useState<HistoricalFigure | null>(null);
+  const [selectedFigure, setSelectedFigure] = useState<HistoricalFigure | null>(null);
   const [strongestCiv, setStrongestCiv] = useState<{ entity: Entity; members: number; living: number; kills: number; artifacts: number; power: number } | null>(null);
   const [raceStats, setRaceStats] = useState<{ race: string; count: number; living: number; kills: number; deaths: number; category: 'civilized' | 'monster' | 'animal' | 'other' }[]>([]);
   const [artifactHolders, setArtifactHolders] = useState<{ entity: Entity; count: number; percentage: number }[]>([]);
@@ -1001,7 +1184,7 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
       {/* Legends */}
       <section className="legends-section">
         {topKiller && (
-          <div className="legend-block killer-highlight">
+          <div className="legend-block killer-highlight clickable" onClick={() => setSelectedFigure(topKiller)}>
             <div className="legend-header">
               <span className="legend-icon">🗡️</span>
               <span className="legend-title">Deadliest Figure</span>
@@ -1256,6 +1439,14 @@ export const Overview = ({ onNewWorld }: OverviewProps) => {
           Load Different World
         </button>
       </section>
+
+      {/* Figure Detail Modal */}
+      {selectedFigure && (
+        <FigureDetailModal 
+          figure={selectedFigure} 
+          onClose={() => setSelectedFigure(null)} 
+        />
+      )}
     </div>
   );
 };

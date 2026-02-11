@@ -1508,3 +1508,254 @@ html, body, #root {
   margin: 0;
   text-align: center;
 }
+
+/* Figure Detail Modal Styles */
+.figure-detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 2rem;
+}
+
+.figure-detail-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.figure-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.figure-detail-header h2 {
+  font-size: 1.8rem;
+  color: var(--text);
+  margin: 0;
+  font-family: 'Georgia', serif;
+}
+
+.figure-detail-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+}
+
+.figure-section {
+  margin-bottom: 2rem;
+}
+
+.figure-section:last-child {
+  margin-bottom: 0;
+}
+
+.figure-section h3 {
+  font-size: 1.1rem;
+  color: var(--accent);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.figure-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.figure-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.figure-info-item .label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.figure-info-item .value {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.figure-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.figure-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+}
+
+.figure-spheres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sphere-tag {
+  padding: 0.4rem 0.8rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--text);
+  text-transform: capitalize;
+}
+
+.figure-skills {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.skill-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.8rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.skill-name {
+  font-size: 0.85rem;
+  color: var(--text);
+  text-transform: capitalize;
+}
+
+.skill-level {
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.figure-kills {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.kill-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.kill-number {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 2rem;
+}
+
+.kill-victim {
+  font-size: 0.9rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.kill-race {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.kill-year {
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+.kill-cause {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.figure-relationships,
+.figure-affiliations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.relationship-item,
+.affiliation-item {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.6rem 0.8rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.rel-type,
+.aff-type {
+  font-size: 0.8rem;
+  color: var(--accent);
+  text-transform: capitalize;
+  min-width: 100px;
+}
+
+.rel-hfid,
+.aff-entity {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.aff-year {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+/* Clickable legend blocks */
+.legend-block.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.legend-block.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(212, 163, 115, 0.2);
+}
+
+.legend-block.killer-highlight.clickable:hover {
+  border-color: var(--red);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
+}
