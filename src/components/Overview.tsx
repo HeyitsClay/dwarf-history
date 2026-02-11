@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '../db/database';
-import type { HistoricalFigure, Entity } from '../types';
+import type { HistoricalFigure, Entity, Artifact } from '../types';
 
 interface OverviewProps {
   onViewFigures: () => void;
@@ -80,7 +80,136 @@ interface GuildHallProps {
 }
 
 // Artifacts Card Component - Simplified version showing just counts
+interface ArtifactListModalProps {
+  title: string;
+  icon: string;
+  artifacts: Artifact[];
+  onClose: () => void;
+}
+
+const ArtifactListModal = ({ title, icon, artifacts, onClose }: ArtifactListModalProps) => {
+  const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
+
+  if (selectedArtifact) {
+    return (
+      <div className="artifact-modal-overlay" onClick={() => setSelectedArtifact(null)}>
+        <div className="artifact-detail-modal" onClick={e => e.stopPropagation()}>
+          <div className="artifact-detail-header">
+            <h3>{selectedArtifact.name || 'Unnamed Artifact'}</h3>
+            <button className="btn-close" onClick={() => setSelectedArtifact(null)}>×</button>
+          </div>
+          <div className="artifact-detail-content">
+            <div className="artifact-detail-row">
+              <span className="artifact-detail-label">ID:</span>
+              <span className="artifact-detail-value">{selectedArtifact.id}</span>
+            </div>
+            {selectedArtifact.itemType && (
+              <div className="artifact-detail-row">
+                <span className="artifact-detail-label">Type:</span>
+                <span className="artifact-detail-value">{selectedArtifact.itemType}</span>
+              </div>
+            )}
+            {selectedArtifact.itemSubtype && (
+              <div className="artifact-detail-row">
+                <span className="artifact-detail-label">Subtype:</span>
+                <span className="artifact-detail-value">{selectedArtifact.itemSubtype}</span>
+              </div>
+            )}
+            {selectedArtifact.material && (
+              <div className="artifact-detail-row">
+                <span className="artifact-detail-label">Material:</span>
+                <span className="artifact-detail-value">{selectedArtifact.material}</span>
+              </div>
+            )}
+            {selectedArtifact.creatorHfid && selectedArtifact.creatorHfid > 0 && (
+              <div className="artifact-detail-row">
+                <span className="artifact-detail-label">Creator HFID:</span>
+                <span className="artifact-detail-value">{selectedArtifact.creatorHfid}</span>
+              </div>
+            )}
+            {selectedArtifact.holderHfid && selectedArtifact.holderHfid > 0 && (
+              <div className="artifact-detail-row">
+                <span className="artifact-detail-label">Holder HFID:</span>
+                <span className="artifact-detail-value">{selectedArtifact.holderHfid}</span>
+              </div>
+            )}
+            {selectedArtifact.siteId && selectedArtifact.siteId > 0 && (
+              <div className="artifact-detail-row">
+                <span className="artifact-detail-label">Site ID:</span>
+                <span className="artifact-detail-value">{selectedArtifact.siteId}</span>
+              </div>
+            )}
+            {selectedArtifact.subregionId && selectedArtifact.subregionId > 0 && (
+              <div className="artifact-detail-row">
+                <span className="artifact-detail-label">Subregion ID:</span>
+                <span className="artifact-detail-value">{selectedArtifact.subregionId}</span>
+              </div>
+            )}
+            {selectedArtifact.entityId && selectedArtifact.entityId > 0 && (
+              <div className="artifact-detail-row">
+                <span className="artifact-detail-label">Entity ID (Holy):</span>
+                <span className="artifact-detail-value">{selectedArtifact.entityId}</span>
+              </div>
+            )}
+            {selectedArtifact.writtenContentId && selectedArtifact.writtenContentId > 0 && (
+              <div className="artifact-detail-row">
+                <span className="artifact-detail-label">Written Content ID:</span>
+                <span className="artifact-detail-value">{selectedArtifact.writtenContentId}</span>
+              </div>
+            )}
+            {selectedArtifact.writtenContentType && (
+              <div className="artifact-detail-row">
+                <span className="artifact-detail-label">Content Type:</span>
+                <span className="artifact-detail-value">{selectedArtifact.writtenContentType}</span>
+              </div>
+            )}
+            {selectedArtifact.writtenContentTitle && (
+              <div className="artifact-detail-row">
+                <span className="artifact-detail-label">Content Title:</span>
+                <span className="artifact-detail-value">{selectedArtifact.writtenContentTitle}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="artifact-modal-overlay" onClick={onClose}>
+      <div className="artifact-list-modal" onClick={e => e.stopPropagation()}>
+        <div className="artifact-list-header">
+          <h3>{icon} {title} ({artifacts.length})</h3>
+          <button className="btn-close" onClick={onClose}>×</button>
+        </div>
+        <div className="artifact-list-content">
+          {artifacts.length === 0 ? (
+            <p className="artifact-list-empty">No artifacts in this category.</p>
+          ) : (
+            <div className="artifact-list">
+              {artifacts.map(artifact => (
+                <div 
+                  key={artifact.id} 
+                  className="artifact-list-item"
+                  onClick={() => setSelectedArtifact(artifact)}
+                >
+                  <span className="artifact-list-id">#{artifact.id}</span>
+                  <span className="artifact-list-name">{artifact.name || 'Unnamed'}</span>
+                  {artifact.itemType && (
+                    <span className="artifact-list-type">{artifact.itemType}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ArtifactsCard = () => {
+  const [allArtifacts, setAllArtifacts] = useState<Artifact[]>([]);
   const [artifactStats, setArtifactStats] = useState<{
     total: number;
     created: number;
@@ -89,45 +218,40 @@ const ArtifactsCard = () => {
     written: number;
     lost: number;
   } | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
     const loadArtifacts = async () => {
       try {
-        const allArtifacts = await db.artifacts.toArray();
+        const artifacts = await db.artifacts.toArray();
+        setAllArtifacts(artifacts);
         
         // Categorize artifacts based on actual XML structure
-        // "Created" = artifacts with a proper name (not just raw materials like "primal metal")
-        const created = allArtifacts.filter(a => a.name && a.name.length > 0).length;
+        const created = artifacts.filter(a => a.name && a.name.length > 0).length;
         
-        // Heroic = name suggests slaying/killing
-        const heroic = allArtifacts.filter(a => {
+        const heroic = artifacts.filter(a => {
           const name = a.name?.toLowerCase() || '';
           return name.includes('slay') || name.includes('killer') || name.includes('bane') ||
                  name.includes('death') || name.includes('murder') || name.includes('carnage');
         }).length;
         
-        // Holy = held by a civilization/entity (worship items)
-        const holy = allArtifacts.filter(a => a.entityId && a.entityId > 0).length;
+        const holy = artifacts.filter(a => a.entityId && a.entityId > 0).length;
         
-        // Written = has written content ID (books, scrolls, etc.)
-        const written = allArtifacts.filter(a => a.writtenContentId && a.writtenContentId > 0).length;
+        const written = artifacts.filter(a => a.writtenContentId && a.writtenContentId > 0).length;
         
-        // Lost = no holder AND no site (abandoned in wilderness)
-        const lost = allArtifacts.filter(a => 
+        const lost = artifacts.filter(a => 
           (!a.holderHfid || a.holderHfid <= 0) && 
           (!a.siteId || a.siteId <= 0)
         ).length;
         
         setArtifactStats({
-          total: allArtifacts.length,
+          total: artifacts.length,
           created,
           heroic,
           holy,
           written,
           lost
         });
-        
-
       } catch (err) {
         console.error('Error loading artifacts:', err);
       }
@@ -136,49 +260,106 @@ const ArtifactsCard = () => {
     loadArtifacts();
   }, []);
 
+  const getFilteredArtifacts = (category: string): Artifact[] => {
+    switch (category) {
+      case 'created':
+        return allArtifacts.filter(a => a.name && a.name.length > 0);
+      case 'heroic':
+        return allArtifacts.filter(a => {
+          const name = a.name?.toLowerCase() || '';
+          return name.includes('slay') || name.includes('killer') || name.includes('bane') ||
+                 name.includes('death') || name.includes('murder') || name.includes('carnage');
+        });
+      case 'holy':
+        return allArtifacts.filter(a => a.entityId && a.entityId > 0);
+      case 'written':
+        return allArtifacts.filter(a => a.writtenContentId && a.writtenContentId > 0);
+      case 'lost':
+        return allArtifacts.filter(a => 
+          (!a.holderHfid || a.holderHfid <= 0) && 
+          (!a.siteId || a.siteId <= 0)
+        );
+      default:
+        return [];
+    }
+  };
+
+  const getCategoryTitle = (category: string): string => {
+    switch (category) {
+      case 'created': return 'Created Artifacts';
+      case 'heroic': return 'Heroic Relics';
+      case 'holy': return 'Holy Artifacts';
+      case 'written': return 'Written Works';
+      case 'lost': return 'Lost Treasures';
+      default: return '';
+    }
+  };
+
+  const getCategoryIcon = (category: string): string => {
+    switch (category) {
+      case 'created': return '🎨';
+      case 'heroic': return '⚔️';
+      case 'holy': return '✨';
+      case 'written': return '📜';
+      case 'lost': return '❓';
+      default: return '';
+    }
+  };
+
   if (!artifactStats || artifactStats.total === 0) {
     return null;
   }
 
   return (
-    <section className="artifacts-section">
-      <div className="artifacts-header">
-        <h2 className="artifacts-title">🏺 Artifacts</h2>
-        <p className="artifacts-subtitle">{artifactStats.total.toLocaleString()} Legendary Items</p>
-      </div>
-      
-      <div className="artifact-categories-simple">
-        <div className="artifact-stat-card">
-          <span className="artifact-stat-icon">🎨</span>
-          <span className="artifact-stat-value">{artifactStats.created}</span>
-          <span className="artifact-stat-label">Created</span>
+    <>
+      <section className="artifacts-section">
+        <div className="artifacts-header">
+          <h2 className="artifacts-title">🏺 Artifacts</h2>
+          <p className="artifacts-subtitle">{artifactStats.total.toLocaleString()} Legendary Items</p>
         </div>
         
-        <div className="artifact-stat-card">
-          <span className="artifact-stat-icon">⚔️</span>
-          <span className="artifact-stat-value">{artifactStats.heroic}</span>
-          <span className="artifact-stat-label">Heroic Relics</span>
+        <div className="artifact-categories-simple">
+          <div className="artifact-stat-card clickable" onClick={() => setSelectedCategory('created')}>
+            <span className="artifact-stat-icon">🎨</span>
+            <span className="artifact-stat-value">{artifactStats.created}</span>
+            <span className="artifact-stat-label">Created</span>
+          </div>
+          
+          <div className="artifact-stat-card clickable" onClick={() => setSelectedCategory('heroic')}>
+            <span className="artifact-stat-icon">⚔️</span>
+            <span className="artifact-stat-value">{artifactStats.heroic}</span>
+            <span className="artifact-stat-label">Heroic Relics</span>
+          </div>
+          
+          <div className="artifact-stat-card clickable" onClick={() => setSelectedCategory('holy')}>
+            <span className="artifact-stat-icon">✨</span>
+            <span className="artifact-stat-value">{artifactStats.holy}</span>
+            <span className="artifact-stat-label">Holy Artifacts</span>
+          </div>
+          
+          <div className="artifact-stat-card clickable" onClick={() => setSelectedCategory('written')}>
+            <span className="artifact-stat-icon">📜</span>
+            <span className="artifact-stat-value">{artifactStats.written}</span>
+            <span className="artifact-stat-label">Written Works</span>
+          </div>
+          
+          <div className="artifact-stat-card clickable" onClick={() => setSelectedCategory('lost')}>
+            <span className="artifact-stat-icon">❓</span>
+            <span className="artifact-stat-value">{artifactStats.lost}</span>
+            <span className="artifact-stat-label">Lost Treasures</span>
+          </div>
         </div>
-        
-        <div className="artifact-stat-card">
-          <span className="artifact-stat-icon">✨</span>
-          <span className="artifact-stat-value">{artifactStats.holy}</span>
-          <span className="artifact-stat-label">Holy Artifacts</span>
-        </div>
-        
-        <div className="artifact-stat-card">
-          <span className="artifact-stat-icon">📜</span>
-          <span className="artifact-stat-value">{artifactStats.written}</span>
-          <span className="artifact-stat-label">Written Works</span>
-        </div>
-        
-        <div className="artifact-stat-card">
-          <span className="artifact-stat-icon">❓</span>
-          <span className="artifact-stat-value">{artifactStats.lost}</span>
-          <span className="artifact-stat-label">Lost Treasures</span>
-        </div>
-      </div>
-    </section>
+      </section>
+
+      {selectedCategory && (
+        <ArtifactListModal
+          title={getCategoryTitle(selectedCategory)}
+          icon={getCategoryIcon(selectedCategory)}
+          artifacts={getFilteredArtifacts(selectedCategory)}
+          onClose={() => setSelectedCategory(null)}
+        />
+      )}
+    </>
   );
 };
 
