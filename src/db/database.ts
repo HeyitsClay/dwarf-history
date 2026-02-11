@@ -27,7 +27,7 @@ export class DwarfHistoryDB extends Dexie {
     super('DwarfHistoryDB');
     console.log('Database: Setting up schema v2...');
     
-    this.version(2).stores({
+    this.version(3).stores({
       // Pass 1 tables
       regions: 'id, name, type',
       undergroundRegions: 'id, type, depth',
