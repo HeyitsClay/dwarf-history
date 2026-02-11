@@ -1,26 +1,47 @@
 import Dexie, { type Table } from 'dexie';
-import type { HistoricalFigure, HistoricalEvent, Site, Entity, Artifact, WorldMetadata } from '../types';
+import type {
+  HistoricalFigure, HistoricalEvent, Site, Entity, Artifact,
+  Region, UndergroundRegion, EventCollection, WrittenContent, WorldMetadata
+} from '../types';
 
 console.log('Database: Initializing...');
 
 export class DwarfHistoryDB extends Dexie {
-  figures!: Table<HistoricalFigure, number>;
-  events!: Table<HistoricalEvent, number>;
+  // Pass 1: Static reference data
+  regions!: Table<Region, number>;
+  undergroundRegions!: Table<UndergroundRegion, number>;
   sites!: Table<Site, number>;
+  figures!: Table<HistoricalFigure, number>;
   entities!: Table<Entity, number>;
   artifacts!: Table<Artifact, number>;
+  writtenContents!: Table<WrittenContent, number>;
+  
+  // Pass 2 & 3: Events and collections
+  events!: Table<HistoricalEvent, number>;
+  eventCollections!: Table<EventCollection, number>;
+  
+  // Metadata
   metadata!: Table<WorldMetadata, string>;
 
   constructor() {
     super('DwarfHistoryDB');
-    console.log('Database: Setting up schema...');
+    console.log('Database: Setting up schema v2...');
     
-    this.version(1).stores({
-      figures: 'id, name, race, deathYear, [name+race]',
-      events: 'id, year, type, slayerHfid, hfid, [type+slayerHfid]',
-      sites: 'id, name, type',
-      entities: 'id, name, race',
-      artifacts: 'id, name, itemType, isRelic, isNamedAfterSlaying, isWrittenContent',
+    this.version(2).stores({
+      // Pass 1 tables
+      regions: 'id, name, type',
+      undergroundRegions: 'id, type, depth',
+      sites: 'id, name, type, coords.x, coords.y',
+      figures: 'id, name, race, deathYear, birthYear, isAlive, [name+race]',
+      entities: 'id, name, race, type',
+      artifacts: 'id, name, itemType, creatorHfid, holderHfid, siteId, currentStatus',
+      writtenContents: 'id, title, type, authorHfid',
+      
+      // Pass 2 & 3 tables
+      events: 'id, year, type, hfid, siteId, entityId, artifactId, collectionId, [type+hfid], [type+siteId]',
+      eventCollections: 'id, type, startYear, endYear, aggressorEntityId, defenderEntityId, beastHfid',
+      
+      // Metadata
       metadata: 'name',
     });
     
@@ -28,11 +49,15 @@ export class DwarfHistoryDB extends Dexie {
   }
 
   async clearAll(): Promise<void> {
-    await this.figures.clear();
-    await this.events.clear();
+    await this.regions.clear();
+    await this.undergroundRegions.clear();
     await this.sites.clear();
+    await this.figures.clear();
     await this.entities.clear();
     await this.artifacts.clear();
+    await this.writtenContents.clear();
+    await this.events.clear();
+    await this.eventCollections.clear();
     await this.metadata.clear();
   }
 
@@ -55,84 +80,109 @@ export class DwarfHistoryDB extends Dexie {
     }
   }
 
-  async bulkAddFigures(figures: HistoricalFigure[], progressCallback?: (count: number) => void): Promise<void> {
-    // Filter out entries without valid IDs and remove duplicates
-    const validFigures = figures.filter(f => f.id !== undefined && f.id !== null);
-    const uniqueFigures = Array.from(new Map(validFigures.map(f => [f.id, f])).values());
+  // Bulk insert methods with batching
+  async bulkAddRegions(items: Region[], progressCallback?: (count: number) => void): Promise<void> {
+    const valid = items.filter(i => i.id != null && !isNaN(i.id));
+    const unique = Array.from(new Map(valid.map(i => [i.id, i])).values());
     const batchSize = 500;
-    for (let i = 0; i < uniqueFigures.length; i += batchSize) {
-      const batch = uniqueFigures.slice(i, i + batchSize);
-      await this.figures.bulkPut(batch); // Use bulkPut to overwrite duplicates
-      if (progressCallback) {
-        progressCallback(Math.min(i + batchSize, uniqueFigures.length));
-      }
+    for (let i = 0; i < unique.length; i += batchSize) {
+      await this.regions.bulkPut(unique.slice(i, i + batchSize));
+      if (progressCallback) progressCallback(Math.min(i + batchSize, unique.length));
     }
   }
 
-  async bulkAddEvents(events: HistoricalEvent[], progressCallback?: (count: number) => void): Promise<void> {
-    // Filter out entries without valid IDs and remove duplicates
-    const validEvents = events.filter(e => e.id !== undefined && e.id !== null);
-    const uniqueEvents = Array.from(new Map(validEvents.map(e => [e.id, e])).values());
+  async bulkAddUndergroundRegions(items: UndergroundRegion[], progressCallback?: (count: number) => void): Promise<void> {
+    const valid = items.filter(i => i.id != null && !isNaN(i.id));
+    const unique = Array.from(new Map(valid.map(i => [i.id, i])).values());
     const batchSize = 500;
-    for (let i = 0; i < uniqueEvents.length; i += batchSize) {
-      const batch = uniqueEvents.slice(i, i + batchSize);
-      await this.events.bulkPut(batch); // Use bulkPut to overwrite duplicates
-      if (progressCallback) {
-        progressCallback(Math.min(i + batchSize, uniqueEvents.length));
-      }
+    for (let i = 0; i < unique.length; i += batchSize) {
+      await this.undergroundRegions.bulkPut(unique.slice(i, i + batchSize));
+      if (progressCallback) progressCallback(Math.min(i + batchSize, unique.length));
     }
   }
 
-  async bulkAddSites(sites: Site[], progressCallback?: (count: number) => void): Promise<void> {
-    // Filter out entries without valid IDs and remove duplicates
-    const validSites = sites.filter(s => s.id !== undefined && s.id !== null);
-    const uniqueSites = Array.from(new Map(validSites.map(s => [s.id, s])).values());
+  async bulkAddSites(items: Site[], progressCallback?: (count: number) => void): Promise<void> {
+    const valid = items.filter(i => i.id != null && !isNaN(i.id));
+    const unique = Array.from(new Map(valid.map(i => [i.id, i])).values());
     const batchSize = 500;
-    for (let i = 0; i < uniqueSites.length; i += batchSize) {
-      const batch = uniqueSites.slice(i, i + batchSize);
-      await this.sites.bulkPut(batch); // Use bulkPut to overwrite duplicates
-      if (progressCallback) {
-        progressCallback(Math.min(i + batchSize, uniqueSites.length));
-      }
+    for (let i = 0; i < unique.length; i += batchSize) {
+      await this.sites.bulkPut(unique.slice(i, i + batchSize));
+      if (progressCallback) progressCallback(Math.min(i + batchSize, unique.length));
     }
   }
 
-  async bulkAddEntities(entities: Entity[], progressCallback?: (count: number) => void): Promise<void> {
-    // Filter out entries without valid IDs and remove duplicates
-    const validEntities = entities.filter(e => e.id !== undefined && e.id !== null);
-    const uniqueEntities = Array.from(new Map(validEntities.map(e => [e.id, e])).values());
+  async bulkAddFigures(items: HistoricalFigure[], progressCallback?: (count: number) => void): Promise<void> {
+    const valid = items.filter(i => i.id != null && !isNaN(i.id));
+    const unique = Array.from(new Map(valid.map(i => [i.id, i])).values());
     const batchSize = 500;
-    for (let i = 0; i < uniqueEntities.length; i += batchSize) {
-      const batch = uniqueEntities.slice(i, i + batchSize);
-      await this.entities.bulkPut(batch); // Use bulkPut to overwrite duplicates
-      if (progressCallback) {
-        progressCallback(Math.min(i + batchSize, uniqueEntities.length));
-      }
+    for (let i = 0; i < unique.length; i += batchSize) {
+      await this.figures.bulkPut(unique.slice(i, i + batchSize));
+      if (progressCallback) progressCallback(Math.min(i + batchSize, unique.length));
     }
   }
 
-  async bulkAddArtifacts(artifacts: Artifact[], progressCallback?: (count: number) => void): Promise<void> {
-    // Filter out entries without valid IDs and remove duplicates
-    const validArtifacts = artifacts.filter(a => a.id !== undefined && a.id !== null);
-    const uniqueArtifacts = Array.from(new Map(validArtifacts.map(a => [a.id, a])).values());
+  async bulkAddEntities(items: Entity[], progressCallback?: (count: number) => void): Promise<void> {
+    const valid = items.filter(i => i.id != null && !isNaN(i.id));
+    const unique = Array.from(new Map(valid.map(i => [i.id, i])).values());
     const batchSize = 500;
-    for (let i = 0; i < uniqueArtifacts.length; i += batchSize) {
-      const batch = uniqueArtifacts.slice(i, i + batchSize);
-      await this.artifacts.bulkPut(batch);
-      if (progressCallback) {
-        progressCallback(Math.min(i + batchSize, uniqueArtifacts.length));
-      }
+    for (let i = 0; i < unique.length; i += batchSize) {
+      await this.entities.bulkPut(unique.slice(i, i + batchSize));
+      if (progressCallback) progressCallback(Math.min(i + batchSize, unique.length));
+    }
+  }
+
+  async bulkAddArtifacts(items: Artifact[], progressCallback?: (count: number) => void): Promise<void> {
+    const valid = items.filter(i => i.id != null && !isNaN(i.id));
+    const unique = Array.from(new Map(valid.map(i => [i.id, i])).values());
+    const batchSize = 500;
+    for (let i = 0; i < unique.length; i += batchSize) {
+      await this.artifacts.bulkPut(unique.slice(i, i + batchSize));
+      if (progressCallback) progressCallback(Math.min(i + batchSize, unique.length));
+    }
+  }
+
+  async bulkAddWrittenContents(items: WrittenContent[], progressCallback?: (count: number) => void): Promise<void> {
+    const valid = items.filter(i => i.id != null && !isNaN(i.id));
+    const unique = Array.from(new Map(valid.map(i => [i.id, i])).values());
+    const batchSize = 500;
+    for (let i = 0; i < unique.length; i += batchSize) {
+      await this.writtenContents.bulkPut(unique.slice(i, i + batchSize));
+      if (progressCallback) progressCallback(Math.min(i + batchSize, unique.length));
+    }
+  }
+
+  async bulkAddEvents(items: HistoricalEvent[], progressCallback?: (count: number) => void): Promise<void> {
+    const valid = items.filter(i => i.id != null && !isNaN(i.id));
+    const unique = Array.from(new Map(valid.map(i => [i.id, i])).values());
+    const batchSize = 500;
+    for (let i = 0; i < unique.length; i += batchSize) {
+      await this.events.bulkPut(unique.slice(i, i + batchSize));
+      if (progressCallback) progressCallback(Math.min(i + batchSize, unique.length));
+    }
+  }
+
+  async bulkAddEventCollections(items: EventCollection[], progressCallback?: (count: number) => void): Promise<void> {
+    const valid = items.filter(i => i.id != null && !isNaN(i.id));
+    const unique = Array.from(new Map(valid.map(i => [i.id, i])).values());
+    const batchSize = 500;
+    for (let i = 0; i < unique.length; i += batchSize) {
+      await this.eventCollections.bulkPut(unique.slice(i, i + batchSize));
+      if (progressCallback) progressCallback(Math.min(i + batchSize, unique.length));
     }
   }
 
   async exportToJSON(): Promise<string> {
     const data = {
       metadata: await this.metadata.toArray(),
-      figures: await this.figures.toArray(),
-      events: await this.events.toArray(),
+      regions: await this.regions.toArray(),
+      undergroundRegions: await this.undergroundRegions.toArray(),
       sites: await this.sites.toArray(),
+      figures: await this.figures.toArray(),
       entities: await this.entities.toArray(),
       artifacts: await this.artifacts.toArray(),
+      writtenContents: await this.writtenContents.toArray(),
+      events: await this.events.toArray(),
+      eventCollections: await this.eventCollections.toArray(),
     };
     return JSON.stringify(data, null, 2);
   }
@@ -141,25 +191,24 @@ export class DwarfHistoryDB extends Dexie {
     const data = JSON.parse(jsonStr);
     await this.clearAll();
     if (data.metadata) await this.metadata.bulkPut(data.metadata);
-    if (data.figures) await this.bulkAddFigures(data.figures);
-    if (data.events) await this.bulkAddEvents(data.events);
+    if (data.regions) await this.bulkAddRegions(data.regions);
+    if (data.undergroundRegions) await this.bulkAddUndergroundRegions(data.undergroundRegions);
     if (data.sites) await this.bulkAddSites(data.sites);
+    if (data.figures) await this.bulkAddFigures(data.figures);
     if (data.entities) await this.bulkAddEntities(data.entities);
     if (data.artifacts) await this.bulkAddArtifacts(data.artifacts);
+    if (data.writtenContents) await this.bulkAddWrittenContents(data.writtenContents);
+    if (data.events) await this.bulkAddEvents(data.events);
+    if (data.eventCollections) await this.bulkAddEventCollections(data.eventCollections);
   }
 }
 
 // Singleton instance
-console.log('Database: Creating instance...');
 export const db = new DwarfHistoryDB();
-console.log('Database: Instance created successfully');
 
 // Storage guard function
 export async function checkStorage(): Promise<{ ok: boolean; warning?: string }> {
-  console.log('Storage: Checking...');
-  
   if (!navigator.storage || !navigator.storage.estimate) {
-    console.log('Storage: API not available, skipping check');
     return { ok: true };
   }
 
@@ -169,22 +218,18 @@ export async function checkStorage(): Promise<{ ok: boolean; warning?: string }>
     const quota = estimate.quota || 0;
     const available = quota - used;
 
-    console.log(`Storage: ${Math.round(used/1024/1024)}MB used, ${Math.round(available/1024/1024)}MB available`);
-
-    // Warn if less than 500MB available (hard Safari limit is around this)
     if (available < 500 * 1024 * 1024) {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       return {
         ok: false,
         warning: isIOS 
-          ? 'iOS Safari has limited storage (~50MB). Large Legends files may fail. Consider using Chrome/Edge on desktop.'
-          : `Limited storage available (${Math.round(available / 1024 / 1024)}MB). Large files may cause issues.`,
+          ? 'iOS Safari has limited storage (~50MB). Large Legends files may fail.'
+          : `Limited storage available (${Math.round(available / 1024 / 1024)}MB).`,
       };
     }
 
     return { ok: true };
   } catch (e) {
-    console.error('Storage: Error checking:', e);
     return { ok: true };
   }
 }
